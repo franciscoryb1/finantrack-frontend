@@ -4,24 +4,24 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { login } from "@/lib/auth";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("test@test.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("franciscoryb1@gmail.com");
+  const [password, setPassword] = useState("1209");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setLoading(true);
+    setError(null);
 
     try {
-      // por ahora solo simulamos
-      // en el paso siguiente lo conectamos al backend
+      await login(email, password);
       window.location.href = "/";
     } catch (err: any) {
-      setError(err?.message ?? "Login failed");
+      setError(err.message ?? "Login failed");
     } finally {
       setLoading(false);
     }
