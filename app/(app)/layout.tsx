@@ -8,7 +8,9 @@ export default function AppLayout({
 }) {
   return (
     <AuthProvider>
-      <AppShell>{children}</AppShell>
+      <AppShell>
+        {children}
+      </AppShell>
     </AuthProvider>
   );
 }
