@@ -11,7 +11,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 import {
   creditCardSchema,
@@ -30,6 +28,16 @@ import {
 } from "../schemas/schema";
 
 import { useBankAccounts } from "@/features/accounts/hooks/useBankAccounts";
+
+const BRAND_OPTIONS = [
+  { value: "VISA", label: "Visa" },
+  { value: "MASTERCARD", label: "Mastercard" },
+] as const;
+
+const ACCOUNT_TYPE_LABEL: Record<"BANK" | "WALLET", string> = {
+  BANK: "Bancaria",
+  WALLET: "Billetera",
+};
 
 type Props = {
   defaultValues?: Partial<CreditCardFormValues>;
@@ -61,10 +69,8 @@ export function CreditCardForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
         {/* Nombre */}
         <FormField
           control={form.control}
@@ -73,57 +79,54 @@ export function CreditCardForm({
             <FormItem>
               <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input placeholder="Ej: Visa Galicia, Black BBVA..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Brand */}
+        {/* Marca — toggle buttons */}
         <FormField
           control={form.control}
           name="brand"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="VISA">
-                    VISA
-                  </SelectItem>
-                  <SelectItem value="MASTERCARD">
-                    MASTERCARD
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <div className="grid grid-cols-2 gap-2">
+                  {BRAND_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => field.onChange(opt.value)}
+                      className={cn(
+                        "rounded-lg border py-2 text-sm font-medium transition-colors",
+                        field.value === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Cuenta bancaria */}
+        {/* Cuenta vinculada */}
         <FormField
           control={form.control}
           name="bankAccountId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cuenta bancaria</FormLabel>
+              <FormLabel>Cuenta vinculada</FormLabel>
               <Select
-                onValueChange={(val) =>
-                  field.onChange(Number(val))
-                }
-                defaultValue={
-                  field.value?.toString() ?? ""
-                }
+                onValueChange={(val) => field.onChange(Number(val))}
+                value={field.value ? field.value.toString() : ""}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -132,11 +135,11 @@ export function CreditCardForm({
                 </FormControl>
                 <SelectContent>
                   {accounts?.map((acc) => (
-                    <SelectItem
-                      key={acc.id}
-                      value={acc.id.toString()}
-                    >
+                    <SelectItem key={acc.id} value={acc.id.toString()}>
                       {acc.name}
+                      <span className="ml-1 text-muted-foreground">
+                        · {ACCOUNT_TYPE_LABEL[acc.type]}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -146,20 +149,24 @@ export function CreditCardForm({
           )}
         />
 
-        {/* Límite en pesos */}
+        {/* Límite */}
         <FormField
           control={form.control}
           name="limit"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Límite (en pesos)</FormLabel>
+              <FormLabel>Límite ($)</FormLabel>
               <FormControl>
                 <Input
                   type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={0.01}
+                  placeholder="0.00"
                   value={field.value ?? ""}
                   onChange={(e) =>
                     field.onChange(
-                      Number(e.target.value)
+                      e.target.value === "" ? 0 : Number(e.target.value)
                     )
                   }
                 />
@@ -169,7 +176,7 @@ export function CreditCardForm({
           )}
         />
 
-        {/* Últimos 4 */}
+        {/* Últimos 4 dígitos */}
         <FormField
           control={form.control}
           name="cardLast4"
@@ -177,29 +184,38 @@ export function CreditCardForm({
             <FormItem>
               <FormLabel>Últimos 4 dígitos</FormLabel>
               <FormControl>
-                <Input maxLength={4} {...field} />
+                <Input
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="1234"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Vencimiento mes/año */}
+        {/* Vencimiento */}
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="expiryMonth"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mes</FormLabel>
+                <FormLabel>Mes de vencimiento</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     max={12}
+                    placeholder="MM"
                     value={field.value ?? ""}
                     onChange={(e) =>
-                      field.onChange(e.target.value === "" ? "" : Number(e.target.value))
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
                     }
                   />
                 </FormControl>
@@ -213,13 +229,17 @@ export function CreditCardForm({
             name="expiryYear"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Año</FormLabel>
+                <FormLabel>Año de vencimiento</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
+                    inputMode="numeric"
+                    placeholder="AAAA"
                     value={field.value ?? ""}
                     onChange={(e) =>
-                      field.onChange(e.target.value === "" ? "" : Number(e.target.value))
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
                     }
                   />
                 </FormControl>
@@ -228,23 +248,6 @@ export function CreditCardForm({
             )}
           />
         </div>
-
-        {/* Activa */}
-        <FormField
-          control={form.control}
-          name="isActive"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between">
-              <FormLabel>Tarjeta activa</FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" className="w-full">
           {submitLabel}
