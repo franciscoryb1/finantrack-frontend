@@ -84,7 +84,7 @@ export default function CardInstallmentsPage() {
         currentNumber: number;
     }) {
         return (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
                 {Array.from({ length: total }).map((_, idx) => {
                     const n = idx + 1;
                     const isPaid = n <= paid;
@@ -94,7 +94,7 @@ export default function CardInstallmentsPage() {
                         <div
                             key={n}
                             className={[
-                                "h-3 w-8 rounded-full transition-all duration-300",
+                                "h-2.5 w-6 rounded-full transition-all duration-300",
                                 isPaid
                                     ? "bg-green-600"
                                     : isCurrent
@@ -156,12 +156,12 @@ export default function CardInstallmentsPage() {
     return (
         <div className="space-y-8">
 
-            <Card className="p-6 space-y-6 shadow-sm">
+            <Card className="p-6 space-y-6 shadow-sm" style={{ background: data.card.backgroundColor }}>
                 {/* Selector arriba (igual que ya lo tenés) */}
 
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-semibold">{data.card.name}</h1>
+                        <h1 className="text-2xl md:text-3xl font-semibold">{data.card.name}</h1>
                         <p className="text-muted-foreground">
                             Período {data.period.month}/{data.period.year}
                         </p>
@@ -172,23 +172,23 @@ export default function CardInstallmentsPage() {
                     </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <div className="rounded-xl border p-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="col-span-2 md:col-span-1 rounded-xl border p-4 bg-white dark:bg-slate-950">
                         <p className="text-muted-foreground text-sm">Total a pagar</p>
-                        <p className="text-3xl font-bold">{formatCurrency(totalToPay)}</p>
+                        <p className="text-2xl md:text-3xl font-bold">{formatCurrency(totalToPay)}</p>
                         <p className="text-xs text-muted-foreground">
                             {data.purchases.length} compra(s) en este período
                         </p>
                     </div>
 
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-xl border p-4 bg-white dark:bg-slate-950">
                         <p className="text-muted-foreground text-sm">Cierre</p>
                         <p className="font-medium">
                             {new Date(data.period.closingDate).toLocaleDateString()}
                         </p>
                     </div>
 
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-xl border p-4 bg-white dark:bg-slate-950">
                         <p className="text-muted-foreground text-sm">Vencimiento</p>
                         <p className="font-medium">
                             {new Date(data.period.dueDate).toLocaleDateString()}
@@ -221,7 +221,7 @@ export default function CardInstallmentsPage() {
                         return (
                             <Card
                                 key={purchase.purchaseId}
-                                className="rounded-lg border p-3 bg-muted/30"
+                                className="rounded-lg border p-3 bg-gray-100 dark:bg-gray-900"
                             >
 
                                 {/* Título compra */}
@@ -240,7 +240,7 @@ export default function CardInstallmentsPage() {
                                         </span>
                                     </div>
 
-                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                    <div className="h-2 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-primary transition-all"
                                             style={{
@@ -251,7 +251,7 @@ export default function CardInstallmentsPage() {
                                 </div>
 
                                 {/* Cuota del período */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div className="grid grid-cols-3 gap-2 text-sm mt-1">
 
                                     <div>
                                         <p className="text-muted-foreground">

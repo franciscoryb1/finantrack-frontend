@@ -59,65 +59,64 @@ export default function InstallmentsPage() {
 
       {/* Por tarjeta */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.cards.map((card) => (
-          console.log(card.backgroundColor),
-          <Card
-            key={card.cardId}
-            className="p-6 rounded-2xl shadow-sm"
-            style={{
+        {data.cards.map((card) => {
+          if (!card.cardId) return null;
+          return (
+            <a key={card.cardId} href={`/installments/${card.cardId}`} className="cursor-pointer">
+            <Card
+              className="p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              style={{
               backgroundColor: card.backgroundColor ?? "#ffffff",
-            }}
-          >
-            {/* Header */}
-            <div className="mb-6">
+              }}
+            >
+              {/* Header */}
+              <div className="mb-6">
               <h2 className="text-xl font-semibold">{card.name}</h2>
               <p className="text-sm opacity-80">
                 Límite total: {formatCurrency(card.limitCents)}
               </p>
-            </div>
+              </div>
 
-            {/* Grid info */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
+              {/* Grid info */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
 
               <div>
                 <p className="opacity-70">Cuotas activas</p>
                 <p className="text-lg font-semibold">
-                  {card.activeInstallmentsCount}
+                {card.activeInstallmentsCount}
                 </p>
               </div>
 
               <div>
                 <p className="opacity-70">Total en período</p>
                 <p className="text-lg font-semibold">
-                  {formatCurrency(card.openStatementAccumulatedCents)}
+                {formatCurrency(card.openStatementAccumulatedCents)}
                 </p>
               </div>
 
               <div>
                 <p className="opacity-70">Cierre</p>
                 <p className="font-medium">
-                  {card.openStatement
-                    ? new Date(
-                      card.openStatement.closingDate
-                    ).toLocaleDateString()
-                    : "—"}
+                {card.openStatement?.closingDate
+                  ? new Date(card.openStatement.closingDate).toLocaleDateString()
+                  : "—"}
                 </p>
               </div>
 
               <div>
                 <p className="opacity-70">Vencimiento</p>
                 <p className="font-medium">
-                  {card.openStatement
-                    ? new Date(
-                      card.openStatement.dueDate
-                    ).toLocaleDateString()
-                    : "—"}
+                {card.openStatement?.dueDate
+                  ? new Date(card.openStatement.dueDate).toLocaleDateString()
+                  : "—"}
                 </p>
               </div>
 
-            </div>
-          </Card>
-        ))}
+              </div>
+            </Card>
+            </a>
+          );
+        })}
       </div>
     </div>
   );

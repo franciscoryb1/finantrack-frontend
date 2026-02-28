@@ -14,13 +14,13 @@ type Props = {
 export function CreditCardItem({ card }: Props) {
   return (
     <Card>
-      <CardContent className="p-4 flex justify-between items-center">
+      <CardContent className="p-4 flex justify-between items-center gap-3">
         {/* Info clickable */}
         <Link
           href={`/credit-cards/${card.id}`}
-          className="space-y-1"
+          className="space-y-1 min-w-0 flex-1"
         >
-          <div className="font-semibold">
+          <div className="font-semibold truncate">
             {card.name}
           </div>
 
@@ -35,7 +35,7 @@ export function CreditCardItem({ card }: Props) {
         </Link>
 
         {/* Acción secundaria */}
-        <div>
+        <div className="shrink-0">
           <EditCreditCardDialog card={card} />
         </div>
       </CardContent>

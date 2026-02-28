@@ -10,15 +10,15 @@ export default function CreditCardDetailPage() {
   const { data, isLoading } = useCreditCardSummary(cardId);
 
   if (isLoading) {
-    return <div className="p-6">Cargando resumen...</div>;
+    return <div>Cargando resumen...</div>;
   }
 
   if (!data) {
-    return <div className="p-6">No se encontró la tarjeta</div>;
+    return <div>No se encontró la tarjeta</div>;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold">Detalle tarjeta</h1>
 
       <div className="border rounded-xl p-4 space-y-2">

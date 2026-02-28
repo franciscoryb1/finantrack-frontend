@@ -5,6 +5,7 @@ export type CardPeriodDetail = {
     id: number;
     name: string;
     limitCents: number;
+    backgroundColor: string;
   };
   period: {
     id: number;

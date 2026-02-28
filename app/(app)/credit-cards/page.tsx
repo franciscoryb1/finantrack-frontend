@@ -12,7 +12,7 @@ export default function CreditCardsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
@@ -22,14 +22,14 @@ export default function CreditCardsPage() {
 
   if (error) {
     return (
-      <div className="p-6 text-destructive">
+      <div className="text-destructive">
         Error al cargar tarjetas.
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">
           Tarjetas de crédito
