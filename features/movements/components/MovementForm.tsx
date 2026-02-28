@@ -53,7 +53,9 @@ export function MovementForm({ onSubmit }: Props) {
   const { data: allAccounts } = useAccounts();
   const { data: creditCards } = useCreditCards();
 
-  const accounts = (allAccounts ?? []).filter((a) => a.type !== "CREDIT_CARD");
+  const accounts = (allAccounts ?? []).filter(
+    (a) => a.type !== "CREDIT_CARD" && a.isActive
+  );
 
   return (
     <Form {...form}>
