@@ -30,9 +30,7 @@ export function CreateCreditCardDialog() {
         1
       ).toISOString(),
       isActive: values.isActive,
-    };
-    
-    console.log("Payload:", payload);
+    };v    
 
     await mutation.mutateAsync(payload);
     setOpen(false);
