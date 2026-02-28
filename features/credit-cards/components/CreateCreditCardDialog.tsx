@@ -31,6 +31,8 @@ export function CreateCreditCardDialog() {
       ).toISOString(),
       isActive: values.isActive,
     };
+    
+    console.log("Payload:", payload);
 
     await mutation.mutateAsync(payload);
     setOpen(false);
