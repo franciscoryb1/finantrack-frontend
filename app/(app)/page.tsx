@@ -7,7 +7,10 @@ import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { KpiCard } from "@/features/movements/components/KpiCard";
 import { MovementsTable } from "@/features/movements/components/MovementsTable";
+import { InstallmentsTable } from "@/features/movements/components/InstallmentsTable";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
+import { ImportLegacyPurchaseDialog } from "@/features/credit-card-purchases/components/ImportLegacyPurchaseDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSummary";
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
 import { useInstallmentsOverview } from "@/features/installments/hooks/useInstallmentsOverview";
@@ -70,7 +73,10 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-        <CreateMovementDialog />
+        <div className="flex gap-2">
+          <ImportLegacyPurchaseDialog />
+          <CreateMovementDialog />
+        </div>
       </div>
 
       {/* KPIs */}
@@ -105,7 +111,7 @@ export default function DashboardPage() {
               <CreditCard className="h-4 w-4" />
             </div>
           </div>
-          {!installmentsOverview ? (
+          {loadingActivity || !installmentsOverview ? (
             <div className="space-y-1.5">
               <div className="h-7 w-28 rounded bg-muted animate-pulse" />
               <div className="h-4 w-20 rounded bg-muted animate-pulse" />
@@ -113,35 +119,76 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <p className="text-xl sm:text-2xl font-bold tabular-nums tracking-tight">
-                {formatCurrency(installmentsOverview.totalDebtCents + installmentsOverview.totalNextStatementCents)}
-              </p>
-              <div className="flex flex-col gap-1 border-t pt-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">Total cuotas</span>
-                  <span className="font-medium tabular-nums">
-                    {formatCurrency(installmentsOverview.totalDebtCents)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">Total consumos</span>
-                  <span className="font-medium tabular-nums">
-                    {formatCurrency(installmentsOverview.totalNextStatementCents)}
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const ccItems = (activity?.items ?? []).filter(
+                  (i) => i.kind === "CREDIT_CARD_INSTALLMENT"
+                );
+                const totalCuotas = ccItems
+                  .filter((i) => (i.installmentInfo?.installmentsCount ?? 1) > 1)
+                  .reduce((sum, i) => sum + i.amountCents, 0);
+                const totalCompras = ccItems
+                  .filter((i) => (i.installmentInfo?.installmentsCount ?? 1) === 1)
+                  .reduce((sum, i) => sum + i.amountCents, 0);
+
+                return (
+                  <>
+                    <p className="text-xl sm:text-2xl font-bold tabular-nums tracking-tight">
+                      {formatCurrency(totalCuotas + totalCompras)}
+                    </p>
+                    <div className="flex flex-col gap-1 border-t pt-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Cuotas</span>
+                        <span className="font-medium tabular-nums">
+                          {formatCurrency(totalCuotas)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Compras</span>
+                        <span className="font-medium tabular-nums">
+                          {formatCurrency(totalCompras)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
         </Card>
       </div>
 
-      {/* Tabla de actividad */}
+      {/* Actividad del período */}
       <div className="space-y-3">
         <h2 className="text-base font-semibold">Actividad del período</h2>
-        <MovementsTable
-          items={activity?.items ?? []}
-          loading={loadingActivity}
-        />
+        <Tabs defaultValue="movimientos">
+          <TabsList>
+            <TabsTrigger value="movimientos">Movimientos</TabsTrigger>
+            <TabsTrigger value="cuotas">Cuotas</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="movimientos">
+            <MovementsTable
+              items={(activity?.items ?? []).filter(
+                (i) =>
+                  i.kind === "MOVEMENT" ||
+                  (i.kind === "CREDIT_CARD_INSTALLMENT" &&
+                    (i.installmentInfo?.installmentsCount ?? 1) === 1)
+              )}
+              loading={loadingActivity}
+            />
+          </TabsContent>
+
+          <TabsContent value="cuotas">
+            <InstallmentsTable
+              items={(activity?.items ?? []).filter(
+                (i) =>
+                  i.kind === "CREDIT_CARD_INSTALLMENT" &&
+                  (i.installmentInfo?.installmentsCount ?? 1) > 1
+              )}
+              loading={loadingActivity}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
     </div>

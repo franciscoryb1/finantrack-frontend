@@ -4,7 +4,8 @@ export type DashboardActivityItem = {
   kind: "MOVEMENT" | "CREDIT_CARD_INSTALLMENT";
   id: number;
   description: string | null;
-  occurredAt: string;
+  occurredAt: string;        // Para movimientos: fecha real. Para cuotas: fecha del resumen.
+  purchaseDate: string | null; // Solo para cuotas: fecha original de la compra.
   amountCents: number;
   type: "INCOME" | "EXPENSE";
   category: { id: number; name: string } | null;
