@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -49,7 +50,12 @@ export function MovementForm({ onSubmit }: Props) {
   const selectedType = form.watch("type");
   const selectedPaymentMethod = form.watch("paymentMethod");
 
+  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>();
+
   const { data: categories } = useCategories(selectedType);
+
+  const selectedParent = categories?.find((c) => c.id === parentCategoryId);
+  const subCategories = selectedParent?.children ?? [];
   const { data: allAccounts } = useAccounts();
   const { data: creditCards } = useCreditCards();
 
@@ -77,6 +83,7 @@ export function MovementForm({ onSubmit }: Props) {
                       onClick={() => {
                         field.onChange(t);
                         form.setValue("categoryId", undefined);
+                        setParentCategoryId(undefined);
                         // Los ingresos siempre van a una cuenta, no a tarjeta
                         if (t === "INCOME") {
                           form.setValue("paymentMethod", "ACCOUNT");
@@ -147,7 +154,7 @@ export function MovementForm({ onSubmit }: Props) {
           )}
         />
 
-        {/* Categoría — filtrada por tipo */}
+        {/* Categoría — filtrada por tipo, con selector de subcategoría */}
         <FormField
           control={form.control}
           name="categoryId"
@@ -157,9 +164,15 @@ export function MovementForm({ onSubmit }: Props) {
                 Categoría{" "}
                 <span className="text-muted-foreground font-normal">(opcional)</span>
               </FormLabel>
+
+              {/* Paso 1: categoría raíz */}
               <Select
-                onValueChange={(val) => field.onChange(Number(val))}
-                value={field.value?.toString() ?? ""}
+                onValueChange={(val) => {
+                  const id = Number(val);
+                  setParentCategoryId(id);
+                  field.onChange(id);
+                }}
+                value={parentCategoryId?.toString() ?? ""}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -174,6 +187,38 @@ export function MovementForm({ onSubmit }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Paso 2: subcategoría — solo si el padre tiene hijos */}
+              {subCategories.length > 0 && (
+                <>
+                  <FormLabel className="text-muted-foreground font-normal text-xs">
+                    Subcategoría{" "}
+                    <span className="font-normal">(opcional)</span>
+                  </FormLabel>
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(Number(val));
+                    }}
+                    value={
+                      subCategories.some((c) => c.id === field.value)
+                        ? field.value?.toString() ?? ""
+                        : ""
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin subcategoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+
               <FormMessage />
             </FormItem>
           )}
