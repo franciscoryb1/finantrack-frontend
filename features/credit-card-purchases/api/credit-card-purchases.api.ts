@@ -15,3 +15,22 @@ export function createCreditCardPurchase(data: CreateCreditCardPurchaseInput) {
     body: JSON.stringify(data),
   });
 }
+
+export type ImportLegacyPurchaseInput = {
+  creditCardId: number;
+  categoryId?: number;
+  totalAmountCents: number;
+  installmentsCount: number;
+  paidInstallmentsCount: number;
+  occurredAt: string;
+  description?: string;
+  firstStatementYear: number;
+  firstStatementMonth: number;
+};
+
+export function importLegacyPurchase(data: ImportLegacyPurchaseInput) {
+  return apiFetch<{ id: number }>("/credit-card-purchases/legacy-import", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
