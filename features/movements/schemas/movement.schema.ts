@@ -3,9 +3,7 @@ import { z } from "zod";
 export const movementSchema = z
   .object({
     type: z.enum(["INCOME", "EXPENSE"]),
-    amount: z
-      .number({ invalid_type_error: "Ingresá un monto" })
-      .positive("Debe ser mayor a 0"),
+    amount: z.number().positive("Debe ser mayor a 0"),
     description: z.string().optional(),
     categoryId: z.number().optional(),
     occurredAt: z.string().min(1, "Seleccionar una fecha"),

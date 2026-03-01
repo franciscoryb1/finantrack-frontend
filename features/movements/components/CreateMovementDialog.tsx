@@ -26,27 +26,30 @@ export function CreateMovementDialog() {
     const [y, m, d] = values.occurredAt.split("-").map(Number);
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
-    if (values.paymentMethod === "CREDIT_CARD") {
-      await createPurchase.mutateAsync({
-        creditCardId: values.creditCardId!,
-        totalAmountCents: Math.round(values.amount * 100),
-        installmentsCount: values.installmentsCount!,
-        categoryId: values.categoryId,
-        description: values.description || undefined,
-        occurredAt,
-      });
-    } else {
-      await createMovement.mutateAsync({
-        type: values.type,
-        amountCents: Math.round(values.amount * 100),
-        accountId: values.accountId!,
-        categoryId: values.categoryId,
-        description: values.description || undefined,
-        occurredAt,
-      });
+    try {
+      if (values.paymentMethod === "CREDIT_CARD") {
+        await createPurchase.mutateAsync({
+          creditCardId: values.creditCardId!,
+          totalAmountCents: Math.round(values.amount * 100),
+          installmentsCount: values.installmentsCount!,
+          categoryId: values.categoryId,
+          description: values.description || undefined,
+          occurredAt,
+        });
+      } else {
+        await createMovement.mutateAsync({
+          type: values.type,
+          amountCents: Math.round(values.amount * 100),
+          accountId: values.accountId!,
+          categoryId: values.categoryId,
+          description: values.description || undefined,
+          occurredAt,
+        });
+      }
+      setOpen(false);
+    } catch {
+      // el toast de error lo muestra el hook
     }
-
-    setOpen(false);
   }
 
   return (

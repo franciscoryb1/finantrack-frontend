@@ -18,15 +18,19 @@ export function CreateAccountDialog() {
   const mutation = useCreateAccount();
 
   async function handleSubmit(values: AccountFormValues) {
-    await mutation.mutateAsync({
-      name: values.name,
-      type: values.type,
-      currentBalanceCents:
-        values.currentBalance !== undefined
-          ? Math.round(values.currentBalance * 100)
-          : undefined,
-    });
-    setOpen(false);
+    try {
+      await mutation.mutateAsync({
+        name: values.name,
+        type: values.type,
+        currentBalanceCents:
+          values.currentBalance !== undefined
+            ? Math.round(values.currentBalance * 100)
+            : undefined,
+      });
+      setOpen(false);
+    } catch {
+      // el toast de error lo muestra el hook
+    }
   }
 
   return (

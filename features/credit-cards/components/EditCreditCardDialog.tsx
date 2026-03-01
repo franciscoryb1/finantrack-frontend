@@ -38,8 +38,12 @@ export function EditCreditCardDialog({ card }: Props) {
             isActive: values.isActive,
         };
 
-        await mutation.mutateAsync(payload);
-        setOpen(false);
+        try {
+          await mutation.mutateAsync(payload);
+          setOpen(false);
+        } catch {
+          // el toast de error lo muestra el hook
+        }
     }
 
     return (

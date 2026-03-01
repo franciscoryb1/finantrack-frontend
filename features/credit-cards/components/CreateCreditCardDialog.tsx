@@ -30,10 +30,14 @@ export function CreateCreditCardDialog() {
         1
       ).toISOString(),
       isActive: values.isActive,
-    };v    
+    };    
 
-    await mutation.mutateAsync(payload);
-    setOpen(false);
+    try {
+      await mutation.mutateAsync(payload);
+      setOpen(false);
+    } catch {
+      // el toast de error lo muestra el hook
+    }
   }
 
   return (
