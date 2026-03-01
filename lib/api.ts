@@ -24,7 +24,10 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const data = await res.json().catch(() => null);
-    throw new Error(data?.message ?? "Request failed");
+    const message = Array.isArray(data?.message)
+      ? data.message[0]
+      : (data?.message ?? "Error inesperado");
+    throw new Error(message);
   }
 
   if (res.status === 204) {
