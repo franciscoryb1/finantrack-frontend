@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { legacyPurchaseSchema, LegacyPurchaseFormValues } from "../schemas/legacy-purchase.schema";
@@ -51,14 +54,35 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
     },
   });
 
+  const watchedCategoryId = form.watch("categoryId");
+  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>();
+
   const { data: creditCards } = useCreditCards();
   const { data: categories } = useCategories("EXPENSE");
 
+  const selectedParent = categories?.find((c) => c.id === parentCategoryId);
+  const subCategories = selectedParent?.children ?? [];
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
-        {/* Tarjeta */}
+        {/* 1. Fecha de compra */}
+        <FormField
+          control={form.control}
+          name="occurredAt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Fecha de compra</FormLabel>
+              <FormControl>
+                <Input type="date" className="w-full" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 2. Tarjeta */}
         <FormField
           control={form.control}
           name="creditCardId"
@@ -70,7 +94,7 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
                 value={field.value?.toString() ?? ""}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleccionar tarjeta..." />
                   </SelectTrigger>
                 </FormControl>
@@ -91,7 +115,103 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
           )}
         />
 
-        {/* Descripción */}
+        {/* 3. Monto + Categoría + Subcategoría (misma fila en desktop) */}
+        <div className={cn(
+          "grid gap-3",
+          subCategories.length > 0
+            ? "grid-cols-1 sm:grid-cols-3"
+            : "grid-cols-1 sm:grid-cols-2"
+        )}>
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Monto total ($)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="0.00"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Categoría{" "}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                </FormLabel>
+                <Select
+                  onValueChange={(val) => {
+                    const id = Number(val);
+                    setParentCategoryId(id);
+                    field.onChange(id);
+                  }}
+                  value={parentCategoryId?.toString() ?? ""}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sin categoría" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories?.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {subCategories.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <Label>
+                Subcategoría{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <Select
+                onValueChange={(val) =>
+                  form.setValue("categoryId", Number(val), { shouldValidate: true })
+                }
+                value={
+                  subCategories.some((c) => c.id === watchedCategoryId)
+                    ? watchedCategoryId?.toString() ?? ""
+                    : ""
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sin subcategoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Descripción */}
         <FormField
           control={form.control}
           name="description"
@@ -109,46 +229,7 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
           )}
         />
 
-        {/* Monto */}
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Monto total ($)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  placeholder="0.00"
-                  value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                  }
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Fecha de compra */}
-        <FormField
-          control={form.control}
-          name="occurredAt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Fecha de compra</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Cuotas totales / Cuotas ya pagadas */}
+        {/* 5. Cuotas totales + Ya pagadas */}
         <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
@@ -195,7 +276,7 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
           />
         </div>
 
-        {/* Primer resumen: año y mes */}
+        {/* 6. Primer resumen: Año + Mes */}
         <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
@@ -231,7 +312,7 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
                   value={field.value?.toString() ?? ""}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Mes..." />
                     </SelectTrigger>
                   </FormControl>
@@ -248,38 +329,6 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
             )}
           />
         </div>
-
-        {/* Categoría */}
-        <FormField
-          control={form.control}
-          name="categoryId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Categoría{" "}
-                <span className="text-muted-foreground font-normal">(opcional)</span>
-              </FormLabel>
-              <Select
-                onValueChange={(val) => field.onChange(Number(val))}
-                value={field.value?.toString() ?? ""}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin categoría" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories?.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" className="w-full">
           Cargar compra
