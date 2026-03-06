@@ -7,7 +7,7 @@ import { useUpdateCategory } from "../hooks/useUpdateCategory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Pencil, Check, X } from "lucide-react";
+import { Plus, Pencil, Check, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
 
@@ -148,9 +148,11 @@ type Props = {
 export function CategoryItem({ category }: Props) {
   const [editing, setEditing] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
+  const [open, setOpen] = useState(false);
   const toggle = useToggleCategory();
   const update = useUpdateCategory();
   const isGlobal = category.userId === null;
+  const hasChildren = category.children.length > 0;
 
   async function handleSave(name: string) {
     await update.mutateAsync({ id: category.id, name });
@@ -166,6 +168,23 @@ export function CategoryItem({ category }: Props) {
     >
       {/* Fila padre */}
       <div className="flex items-center gap-2 min-h-[2rem]">
+        {/* Chevron desplegable */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          disabled={!hasChildren}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 transition-transform text-muted-foreground",
+              open && "rotate-180",
+              !hasChildren && "opacity-20"
+            )}
+          />
+        </Button>
+
         {editing ? (
           <InlineEdit
             value={category.name}
@@ -174,9 +193,12 @@ export function CategoryItem({ category }: Props) {
           />
         ) : (
           <>
-            <span className="font-semibold flex-1 min-w-0 truncate">
+            <button
+              className="font-semibold flex-1 min-w-0 truncate text-left"
+              onClick={() => hasChildren && setOpen((o) => !o)}
+            >
               {category.name}
-            </span>
+            </button>
             <div className="flex items-center gap-1 shrink-0">
               {isGlobal && (
                 <Badge variant="outline" className="text-[10px]">
@@ -237,7 +259,7 @@ export function CategoryItem({ category }: Props) {
       </div>
 
       {/* Subcategorías */}
-      {category.children.length > 0 && (
+      {hasChildren && open && (
         <div className="space-y-1 pt-1">
           {category.children.map((child) => (
             <ChildRow key={child.id} child={child} />
