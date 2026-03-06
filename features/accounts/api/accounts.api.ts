@@ -35,6 +35,13 @@ export function createAccount(data: CreateAccountInput) {
   });
 }
 
+export function updateAccount(id: number, name: string) {
+  return apiFetch<Account>(`/accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+}
+
 export function activateAccount(id: number) {
   return apiFetch<Account>(`/accounts/${id}/activate`, { method: "PATCH" });
 }

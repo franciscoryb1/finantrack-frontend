@@ -1,49 +1,41 @@
 "use client";
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { AccountForm } from "./AccountForm";
 import { useCreateAccount } from "../hooks/useCreateAccount";
 import { AccountFormValues } from "../schemas/account.schema";
 
-export function CreateAccountDialog() {
-  const [open, setOpen] = useState(false);
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function CreateAccountDialog({ open, onOpenChange }: Props) {
   const mutation = useCreateAccount();
 
   async function handleSubmit(values: AccountFormValues) {
-    try {
-      await mutation.mutateAsync({
-        name: values.name,
-        type: values.type,
-        currentBalanceCents:
-          values.currentBalance !== undefined
-            ? Math.round(values.currentBalance * 100)
-            : undefined,
-      });
-      setOpen(false);
-    } catch {
-      // el toast de error lo muestra el hook
-    }
+    await mutation.mutateAsync({
+      name: values.name,
+      type: values.type,
+      currentBalanceCents:
+        values.currentBalance !== undefined
+          ? Math.round(values.currentBalance * 100)
+          : undefined,
+    });
+    onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Nueva cuenta</Button>
-      </DialogTrigger>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Crear cuenta</DialogTitle>
         </DialogHeader>
-
         <AccountForm onSubmit={handleSubmit} />
       </DialogContent>
     </Dialog>
