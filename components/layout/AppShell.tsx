@@ -34,6 +34,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Cuentas
       </Link>
 
+      <Link href="/categories" className="px-3 py-2 rounded-md text-sm transition-colors hover:bg-accent">
+        Categorías
+      </Link>
+
       <Collapsible>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between px-3">
