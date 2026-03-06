@@ -29,9 +29,12 @@ import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 
 type Props = {
   onSubmit: (values: MovementFormValues) => Promise<void>;
+  defaultValues?: Partial<MovementFormValues>;
+  initialParentCategoryId?: number;
+  submitLabel?: string;
 };
 
-export function MovementForm({ onSubmit }: Props) {
+export function MovementForm({ onSubmit, defaultValues, initialParentCategoryId, submitLabel = "Guardar" }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const form = useForm<MovementFormValues>({
     resolver: zodResolver(movementSchema),
@@ -45,6 +48,7 @@ export function MovementForm({ onSubmit }: Props) {
       accountId: undefined,
       creditCardId: undefined,
       installmentsCount: 1,
+      ...defaultValues,
     },
   });
 
@@ -52,7 +56,7 @@ export function MovementForm({ onSubmit }: Props) {
   const selectedPaymentMethod = form.watch("paymentMethod");
   const watchedCategoryId = form.watch("categoryId");
 
-  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>();
+  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
 
   const { data: categories } = useCategories(selectedType);
   const selectedParent = categories?.find((c) => c.id === parentCategoryId);
@@ -374,7 +378,7 @@ export function MovementForm({ onSubmit }: Props) {
         )}
 
         <Button type="submit" className="w-full">
-          Guardar
+          {submitLabel}
         </Button>
       </form>
     </Form>

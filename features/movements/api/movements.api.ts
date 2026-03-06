@@ -72,3 +72,16 @@ export function createMovement(data: CreateMovementInput) {
     body: JSON.stringify(data),
   });
 }
+
+export type UpdateMovementInput = Partial<CreateMovementInput>;
+
+export function updateMovement(id: number, data: UpdateMovementInput) {
+  return apiFetch<Movement>(`/movements/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteMovement(id: number) {
+  return apiFetch<void>(`/movements/${id}`, { method: "DELETE" });
+}

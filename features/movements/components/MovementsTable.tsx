@@ -12,7 +12,26 @@ import {
   PaginationEllipsis,
   PaginationItem,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EditMovementDialog } from "./EditMovementDialog";
+import { useDeleteMovement } from "../hooks/useDeleteMovement";
 
 const PAGE_SIZE = 10;
 
@@ -59,6 +78,9 @@ function ItemSource({ item }: { item: DashboardActivityItem }) {
 
 export function MovementsTable({ items, loading }: Props) {
   const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState<DashboardActivityItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<DashboardActivityItem | null>(null);
+  const deleteMovement = useDeleteMovement();
 
   useEffect(() => {
     setPage(1);
@@ -128,21 +150,46 @@ export function MovementsTable({ items, loading }: Props) {
                 </div>
               </div>
 
-              <div className="text-right shrink-0">
-                <p className={cn(
-                  "font-semibold tabular-nums text-sm",
-                  item.type === "INCOME"
-                    ? "text-green-700 dark:text-green-400"
-                    : "text-red-700 dark:text-red-400",
-                )}>
-                  {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatDate(item.purchaseDate ?? item.occurredAt)}
-                </p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  reg. {formatDate(item.registeredAt)}
-                </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="text-right">
+                  <p className={cn(
+                    "font-semibold tabular-nums text-sm",
+                    item.type === "INCOME"
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-red-700 dark:text-red-400",
+                  )}>
+                    {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatDate(item.purchaseDate ?? item.occurredAt)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                    reg. {formatDate(item.registeredAt)}
+                  </p>
+                </div>
+
+                {item.kind === "MOVEMENT" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditItem(item)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setDeleteItem(item)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           ))}
@@ -157,6 +204,7 @@ export function MovementsTable({ items, loading }: Props) {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Categoría</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Origen</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">Monto</th>
+              <th className="px-4 py-3 w-10" />
             </tr>
           </thead>
           <tbody>
@@ -214,11 +262,74 @@ export function MovementsTable({ items, loading }: Props) {
                 )}>
                   {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
                 </td>
+
+                <td className="px-2 py-3">
+                  {item.kind === "MOVEMENT" && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditItem(item)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteItem(item)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* ── Diálogo editar ── */}
+      {editItem && (
+        <EditMovementDialog
+          item={editItem}
+          open={!!editItem}
+          onOpenChange={(open) => { if (!open) setEditItem(null); }}
+        />
+      )}
+
+      {/* ── Diálogo confirmar eliminar ── */}
+      <AlertDialog open={!!deleteItem} onOpenChange={(open) => { if (!open) setDeleteItem(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar movimiento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteItem?.description
+                ? `"${deleteItem.description}"`
+                : "Este movimiento"}{" "}
+              será eliminado permanentemente. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deleteItem) {
+                  await deleteMovement.mutateAsync(deleteItem.id);
+                  setDeleteItem(null);
+                }
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Paginación ── */}
       {totalPages > 1 && (
