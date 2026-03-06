@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Oculta el botón nativo de revelar contraseña de Edge/Chrome */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
