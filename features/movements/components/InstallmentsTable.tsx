@@ -105,7 +105,11 @@ export function InstallmentsTable({ items, loading }: Props) {
                   {item.category && (
                     <>
                       <span>·</span>
-                      <span>{item.category.name}</span>
+                      <span>
+                        {item.category.parent
+                          ? `${item.category.parent.name} › ${item.category.name}`
+                          : item.category.name}
+                      </span>
                     </>
                   )}
                 </div>
@@ -116,13 +120,11 @@ export function InstallmentsTable({ items, loading }: Props) {
                   -{formatCurrency(item.amountCents)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatDate(item.occurredAt)}
+                  {formatDate(item.purchaseDate ?? item.occurredAt)}
                 </p>
-                {item.purchaseDate && (
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    comprado {formatDate(item.purchaseDate, false)}
-                  </p>
-                )}
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  reg. {formatDate(item.registeredAt)}
+                </p>
               </div>
             </div>
           ))}
@@ -145,13 +147,11 @@ export function InstallmentsTable({ items, loading }: Props) {
                 key={`${item.kind}-${item.id}`}
                 className="border-b last:border-0 hover:bg-muted/30 transition-colors"
               >
-                <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                  <div>{formatDate(item.occurredAt)}</div>
-                  {item.purchaseDate && (
-                    <div className="text-xs text-muted-foreground/60">
-                      comprado {formatDate(item.purchaseDate, false)}
-                    </div>
-                  )}
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="font-medium">{formatDate(item.purchaseDate ?? item.occurredAt)}</div>
+                  <div className="text-xs text-muted-foreground/70 mt-0.5">
+                    reg. {formatDate(item.registeredAt)}
+                  </div>
                 </td>
 
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -166,7 +166,14 @@ export function InstallmentsTable({ items, loading }: Props) {
 
                 <td className="px-4 py-3">
                   {item.category ? (
-                    <Badge variant="secondary">{item.category.name}</Badge>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge variant="secondary">
+                        {item.category.parent ? item.category.parent.name : item.category.name}
+                      </Badge>
+                      {item.category.parent && (
+                        <Badge variant="secondary">{item.category.name}</Badge>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
