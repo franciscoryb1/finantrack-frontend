@@ -173,6 +173,12 @@ export default function LoginPage() {
                           placeholder="tu@email.com"
                           className="pl-9"
                           disabled={isLocked}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              form.handleSubmit(onSubmit)();
+                            }
+                          }}
                           {...field}
                         />
                       </div>
