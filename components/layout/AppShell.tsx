@@ -62,8 +62,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Collapsible>
 
       <div className="mt-auto">
+        <Link href="/profile" className="block px-3 py-2 rounded-md text-sm transition-colors hover:bg-accent mb-2">
+          Mi perfil
+        </Link>
         <Button variant="outline" onClick={logout} className="w-full">
-          Logout
+          Cerrar sesión
         </Button>
       </div>
     </div>
