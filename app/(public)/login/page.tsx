@@ -81,8 +81,28 @@ export default function LoginPage() {
     if (isLocked) return;
     setAuthError(null);
 
+    const email = values.email.trim().toLowerCase();
+
     try {
-      await login(values.email.trim().toLowerCase(), values.password);
+      await login(email, values.password);
+
+      // Credential Management API: le indica al browser que guarde/actualice las credenciales
+      if (
+        typeof window !== "undefined" &&
+        "credentials" in navigator &&
+        "PasswordCredential" in window
+      ) {
+        try {
+          const cred = new (window as any).PasswordCredential({
+            id: email,
+            password: values.password,
+          });
+          await navigator.credentials.store(cred);
+        } catch {
+          // No crítico — el browser puede ignorarlo si el usuario rechazó guardar antes
+        }
+      }
+
       window.location.href = "/";
     } catch {
       // Mensaje genérico: no revelar si el email existe o no
@@ -149,7 +169,7 @@ export default function LoginPage() {
                         <Input
                           type="email"
                           inputMode="email"
-                          autoComplete="username"
+                          autoComplete="email"
                           placeholder="tu@email.com"
                           className="pl-9"
                           disabled={isLocked}
