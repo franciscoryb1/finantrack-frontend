@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSummary";
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
 import { useInstallmentsOverview } from "@/features/installments/hooks/useInstallmentsOverview";
+import { CategorySpendCard } from "@/features/dashboard/components/CategorySpendCard";
 
 const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -29,8 +30,12 @@ function getPeriodDates(year: number, month: number) {
 
 export default function DashboardPage() {
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const [year, setYear] = useState(currentYear);
+  const [month, setMonth] = useState(currentMonth);
+
+  const isCurrentPeriod = year === currentYear && month === currentMonth;
 
   function prevMonth() {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -47,6 +52,43 @@ export default function DashboardPage() {
   const { data: summary, isLoading: loadingSummary } = useMovementsSummary({ fromDate, toDate });
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(year, month);
   const { data: installmentsOverview } = useInstallmentsOverview();
+
+  const TRACKED_CATEGORIES = ["Salidas", "Casa", "Transporte", "Supermercado"];
+
+  const categorySpending = useMemo(() => {
+    const spending = new Map<string, { totalCents: number; subcategories: Map<string, number> }>();
+
+    for (const item of activity?.items ?? []) {
+      if (item.type !== "EXPENSE" || !item.category) continue;
+
+      const rootName = item.category.parent?.name ?? item.category.name;
+      const subName = item.category.parent ? item.category.name : null;
+
+      if (!spending.has(rootName)) {
+        spending.set(rootName, { totalCents: 0, subcategories: new Map() });
+      }
+
+      const entry = spending.get(rootName)!;
+      entry.totalCents += item.amountCents;
+
+      if (subName) {
+        entry.subcategories.set(subName, (entry.subcategories.get(subName) ?? 0) + item.amountCents);
+      }
+    }
+
+    return spending;
+  }, [activity]);
+
+  const ccSingleInstallmentExpenses = (activity?.items ?? [])
+    .filter(
+      (i) =>
+        i.kind === "CREDIT_CARD_INSTALLMENT" &&
+        (i.installmentInfo?.installmentsCount ?? 1) === 1 &&
+        i.type === "EXPENSE"
+    )
+    .reduce((sum, i) => sum + i.amountCents, 0);
+
+  const totalExpensesCents = (summary?.totalExpenseCents ?? 0) + ccSingleInstallmentExpenses;
 
   const netTrend = !summary
     ? "neutral"
@@ -71,6 +113,16 @@ export default function DashboardPage() {
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
+            {!isCurrentPeriod && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs ml-1"
+                onClick={() => { setYear(currentYear); setMonth(currentMonth); }}
+              >
+                Hoy
+              </Button>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
@@ -91,10 +143,10 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Gastos del período"
-          value={summary ? formatCurrency(summary.totalExpenseCents) : "—"}
+          value={summary && activity ? formatCurrency(totalExpensesCents) : "—"}
           icon={TrendingDown}
           trend="negative"
-          loading={loadingSummary}
+          loading={loadingSummary || loadingActivity}
         />
         <KpiCard
           title="Balance neto"
@@ -155,6 +207,30 @@ export default function DashboardPage() {
             </>
           )}
         </Card>
+      </div>
+
+      {/* Gastos por categoría */}
+      <div className="space-y-3">
+        <h2 className="text-base font-semibold">Gastos por categoría</h2>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {TRACKED_CATEGORIES.map((catName) => {
+            const entry = categorySpending.get(catName);
+            const subcategories = entry
+              ? Array.from(entry.subcategories.entries())
+                  .map(([name, totalCents]) => ({ name, totalCents }))
+                  .sort((a, b) => b.totalCents - a.totalCents)
+              : [];
+            return (
+              <CategorySpendCard
+                key={catName}
+                categoryName={catName}
+                totalCents={entry?.totalCents ?? 0}
+                subcategories={subcategories}
+                loading={loadingActivity}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Actividad del período */}
