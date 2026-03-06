@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { categorySchema, CategoryFormValues } from "../schemas/category.schema";
 import { CategoryType } from "../api/categories.api";
+import { ColorPicker } from "./ColorPicker";
 
 const TYPE_OPTIONS: { value: CategoryType; label: string }[] = [
   { value: "EXPENSE", label: "Gasto" },
@@ -42,6 +43,7 @@ export function CategoryForm({
     defaultValues: {
       name: "",
       type: parentType ?? "EXPENSE",
+      color: null,
       ...defaultValues,
     },
   });
@@ -92,7 +94,7 @@ export function CategoryForm({
           </p>
         )}
 
-        {/* Nombre */}
+        {/* Nombre + color en la misma fila */}
         <FormField
           control={form.control}
           name="name"
@@ -100,11 +102,23 @@ export function CategoryForm({
             <FormItem>
               <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Ej: Alimentación, Transporte..."
-                  autoFocus
-                  {...field}
-                />
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field: colorField }) => (
+                      <ColorPicker
+                        value={colorField.value}
+                        onChange={colorField.onChange}
+                      />
+                    )}
+                  />
+                  <Input
+                    placeholder="Ej: Alimentación, Transporte..."
+                    autoFocus
+                    {...field}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

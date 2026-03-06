@@ -9,6 +9,7 @@ export type CategoryChild = {
   parentId: number;
   isActive: boolean;
   userId: number | null;
+  color: string | null;
 };
 
 export type Category = {
@@ -18,6 +19,7 @@ export type Category = {
   parentId: null;
   isActive: boolean;
   userId: number | null;
+  color: string | null;
   children: CategoryChild[];
 };
 
@@ -25,6 +27,12 @@ export type CreateCategoryInput = {
   name: string;
   type?: CategoryType;
   parentId?: number;
+  color?: string;
+};
+
+export type UpdateCategoryInput = {
+  name?: string;
+  color?: string;
 };
 
 export function getCategories(includeInactive = false) {
@@ -39,10 +47,10 @@ export function createCategory(data: CreateCategoryInput) {
   });
 }
 
-export function updateCategory(id: number, name: string) {
+export function updateCategory(id: number, data: UpdateCategoryInput) {
   return apiFetch<Category>(`/categories/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(data),
   });
 }
 

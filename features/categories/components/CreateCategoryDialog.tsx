@@ -33,6 +33,7 @@ export function CreateCategoryDialog({
       name: values.name,
       type: parentCategory ? undefined : values.type,
       parentId: parentCategory ? parentCategory.id : undefined,
+      color: values.color ?? undefined,
     });
     onOpenChange(false);
   }
