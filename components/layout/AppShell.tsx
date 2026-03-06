@@ -7,6 +7,17 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -115,15 +126,30 @@ function UserSection({ onNavigate }: { onNavigate?: () => void }) {
           Mi perfil
         </Button>
       </Link>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={logout}
-        className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive px-2"
-      >
-        <LogOut className="h-3.5 w-3.5" />
-        Cerrar sesión
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive px-2"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Cerrar sesión
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cerrar sesión?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vas a salir de tu cuenta. Podés volver a ingresar cuando quieras.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={logout}>Cerrar sesión</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

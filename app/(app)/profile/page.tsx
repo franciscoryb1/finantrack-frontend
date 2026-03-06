@@ -26,6 +26,17 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, LogOut, KeyRound, User } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // ── Avatar con iniciales ──────────────────────────────────────────────────────
 
@@ -300,10 +311,26 @@ export default function ProfilePage() {
 
       <div>
         <p className="text-sm font-medium mb-2">Sesión</p>
-        <Button variant="outline" onClick={logout} className="gap-2">
-          <LogOut className="h-4 w-4" />
-          Cerrar sesión
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cerrar sesión?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Vas a salir de tu cuenta. Podés volver a ingresar cuando quieras.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={logout}>Cerrar sesión</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
