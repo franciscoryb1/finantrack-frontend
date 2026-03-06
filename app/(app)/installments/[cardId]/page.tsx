@@ -48,6 +48,16 @@ export default function CardInstallmentsPage() {
     );
 
 
+    function formatDate(iso: string) {
+        const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            timeZone: "UTC",
+        });
+    }
+
     function formatInstallmentStatus(status: string) {
         switch (status) {
             case "PENDING":
@@ -184,14 +194,14 @@ export default function CardInstallmentsPage() {
                     <div className="rounded-xl border p-4 bg-white dark:bg-slate-950">
                         <p className="text-muted-foreground text-sm">Cierre</p>
                         <p className="font-medium">
-                            {new Date(data.period.closingDate).toLocaleDateString()}
+                            {formatDate(data.period.closingDate)}
                         </p>
                     </div>
 
                     <div className="rounded-xl border p-4 bg-white dark:bg-slate-950">
                         <p className="text-muted-foreground text-sm">Vencimiento</p>
                         <p className="font-medium">
-                            {new Date(data.period.dueDate).toLocaleDateString()}
+                            {formatDate(data.period.dueDate)}
                         </p>
                     </div>
                 </div>

@@ -5,6 +5,16 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 
+function formatDate(iso: string) {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export default function InstallmentsPage() {
   const { data, isLoading, error } = useInstallmentsOverview();
 
@@ -98,7 +108,7 @@ export default function InstallmentsPage() {
                 <p className="opacity-70">Cierre</p>
                 <p className="font-medium">
                 {card.openStatement?.closingDate
-                  ? new Date(card.openStatement.closingDate).toLocaleDateString()
+                  ? formatDate(card.openStatement.closingDate)
                   : "—"}
                 </p>
               </div>
@@ -107,7 +117,7 @@ export default function InstallmentsPage() {
                 <p className="opacity-70">Vencimiento</p>
                 <p className="font-medium">
                 {card.openStatement?.dueDate
-                  ? new Date(card.openStatement.dueDate).toLocaleDateString()
+                  ? formatDate(card.openStatement.dueDate)
                   : "—"}
                 </p>
               </div>

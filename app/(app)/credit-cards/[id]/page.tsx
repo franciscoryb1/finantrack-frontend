@@ -38,11 +38,17 @@ export default function CreditCardDetailPage() {
           </div>
           <div>
             Cierre:{" "}
-            {new Date(data.openStatement.closingDate).toLocaleDateString()}
+            {(() => {
+              const [y, m, d] = data.openStatement.closingDate.slice(0, 10).split("-").map(Number);
+              return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+            })()}
           </div>
           <div>
             Vencimiento:{" "}
-            {new Date(data.openStatement.dueDate).toLocaleDateString()}
+            {(() => {
+              const [y, m, d] = data.openStatement.dueDate.slice(0, 10).split("-").map(Number);
+              return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+            })()}
           </div>
         </div>
       )}
