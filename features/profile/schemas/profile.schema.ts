@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const profileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   email: z.string().email("Email inválido"),
   phoneNumber: z.string().optional(),
 });

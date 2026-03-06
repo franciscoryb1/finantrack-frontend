@@ -29,8 +29,12 @@ import { Pencil, LogOut, KeyRound, User } from "lucide-react";
 
 // ── Avatar con iniciales ──────────────────────────────────────────────────────
 
-function Avatar({ email }: { email: string }) {
-  const initials = email.slice(0, 2).toUpperCase();
+function Avatar({ firstName, lastName, email }: { firstName?: string | null; lastName?: string | null; email: string }) {
+  const initials = firstName && lastName
+    ? `${firstName[0]}${lastName[0]}`.toUpperCase()
+    : firstName
+    ? firstName.slice(0, 2).toUpperCase()
+    : email.slice(0, 2).toUpperCase();
   return (
     <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-bold shrink-0">
       {initials}
@@ -48,6 +52,8 @@ function ProfileSection() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     values: {
+      firstName: profile?.firstName ?? "",
+      lastName: profile?.lastName ?? "",
       email: profile?.email ?? "",
       phoneNumber: profile?.phoneNumber ?? "",
     },
@@ -55,6 +61,8 @@ function ProfileSection() {
 
   async function handleSubmit(values: ProfileFormValues) {
     await updateProfile.mutateAsync({
+      firstName: values.firstName !== (profile?.firstName ?? "") ? values.firstName : undefined,
+      lastName: values.lastName !== (profile?.lastName ?? "") ? values.lastName : undefined,
       email: values.email !== profile?.email ? values.email : undefined,
       phoneNumber: values.phoneNumber !== profile?.phoneNumber ? values.phoneNumber : undefined,
     });
@@ -96,6 +104,34 @@ function ProfileSection() {
         {editing ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Juan" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Pérez" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="email"
@@ -135,9 +171,20 @@ function ProfileSection() {
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-4">
-              {profile && <Avatar email={profile.email} />}
+              {profile && (
+                <Avatar
+                  firstName={profile.firstName}
+                  lastName={profile.lastName}
+                  email={profile.email}
+                />
+              )}
               <div>
-                <p className="font-medium">{profile?.email}</p>
+                {(profile?.firstName || profile?.lastName) && (
+                  <p className="font-semibold">
+                    {[profile.firstName, profile.lastName].filter(Boolean).join(" ")}
+                  </p>
+                )}
+                <p className="font-medium text-sm">{profile?.email}</p>
                 <p className="text-sm text-muted-foreground">
                   {profile?.phoneNumber || "Sin teléfono registrado"}
                 </p>

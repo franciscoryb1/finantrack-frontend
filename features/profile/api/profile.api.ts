@@ -3,6 +3,8 @@ import { apiFetch } from "@/lib/api";
 export type UserProfile = {
   id: number;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
   phoneNumber: string;
   createdAt: string;
 };
@@ -11,7 +13,12 @@ export function getProfile() {
   return apiFetch<UserProfile>("/users/me");
 }
 
-export function updateProfile(data: { email?: string; phoneNumber?: string }) {
+export function updateProfile(data: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+}) {
   return apiFetch<UserProfile>("/users/me", {
     method: "PATCH",
     body: JSON.stringify(data),
