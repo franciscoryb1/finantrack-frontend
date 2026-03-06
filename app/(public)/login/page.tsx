@@ -198,6 +198,12 @@ export default function LoginPage() {
                           placeholder="••••••••"
                           className="pl-9 pr-10"
                           disabled={isLocked}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              form.handleSubmit(onSubmit)();
+                            }
+                          }}
                           {...field}
                         />
                         <button
