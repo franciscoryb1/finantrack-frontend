@@ -121,12 +121,18 @@ type Purchase = {
   occurredAt: string;
   totalAmountCents: number;
   installmentsCount: number;
+  category: { id: number; name: string; parent: { id: number; name: string } | null } | null;
   installmentForThisPeriod: { installmentNumber: number; amountCents: number; status: string };
 };
 
 function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
   const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
   const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
+  const categoryLabel = purchase.category
+    ? purchase.category.parent
+      ? `${purchase.category.parent.name} › ${purchase.category.name}`
+      : purchase.category.name
+    : null;
 
   return (
     <Card className="p-4 space-y-3">
@@ -137,12 +143,15 @@ function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProg
               <span className="italic text-muted-foreground">Sin descripción</span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {formatDate(purchase.occurredAt)}
+          <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+            <span className="text-xs text-muted-foreground">{formatDate(purchase.occurredAt)}</span>
             {purchase.installmentsCount > 1 && (
-              <> · {formatCurrency(purchase.totalAmountCents)} total</>
+              <span className="text-xs text-muted-foreground">· {formatCurrency(purchase.totalAmountCents)} total</span>
             )}
-          </p>
+            {categoryLabel && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{categoryLabel}</Badge>
+            )}
+          </div>
         </div>
         <div className="shrink-0 text-right space-y-1">
           <p className="font-bold">{formatCurrency(amountCents)}</p>
@@ -208,7 +217,7 @@ export default function CreditCardDetailPage() {
   const isLoading = loadingPeriods || loadingDetail;
 
   const sortedPurchases = [...(data?.purchases ?? [])].sort(
-    (a, b) => b.installmentForThisPeriod.amountCents - a.installmentForThisPeriod.amountCents,
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
   );
   const installments = sortedPurchases.filter((p) => p.installmentsCount > 1);
   const consumptions = sortedPurchases.filter((p) => p.installmentsCount === 1);
@@ -242,7 +251,7 @@ export default function CreditCardDetailPage() {
                 </Badge>
               )}
               {card && !card.isActive && (
-                <Badge variant="secondary">Inactiva</Badge>
+                <Badge variant="destructive">Inactiva</Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground">···· {card?.cardLast4}</p>
@@ -268,7 +277,7 @@ export default function CreditCardDetailPage() {
               title={card?.isActive ? "Desactivar tarjeta" : "Activar tarjeta"}
               onClick={() => setConfirmToggle(true)}
             >
-              <Power className={cn("h-4 w-4", card?.isActive ? "text-green-600" : "text-muted-foreground")} />
+              <Power className={cn("h-4 w-4", card?.isActive ? "text-green-600" : "text-destructive")} />
             </Button>
           </div>
         </div>
@@ -360,31 +369,21 @@ export default function CreditCardDetailPage() {
           </div>
 
           {/* Tabs: Cuotas / Consumos */}
-          <Tabs defaultValue="installments">
+          <Tabs defaultValue="consumptions">
             <TabsList className="w-full">
-              <TabsTrigger value="installments" className="flex-1">
-                Cuotas
-                {installments.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">{installments.length}</Badge>
-                )}
-              </TabsTrigger>
               <TabsTrigger value="consumptions" className="flex-1">
                 Consumos
                 {consumptions.length > 0 && (
                   <Badge variant="secondary" className="ml-2 text-xs">{consumptions.length}</Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="installments" className="flex-1">
+                Cuotas
+                {installments.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">{installments.length}</Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="installments" className="mt-4 space-y-3">
-              {installments.length === 0 ? (
-                <EmptyTab message="No hay cuotas en este resumen." />
-              ) : (
-                installments.map((p) => (
-                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
-                ))
-              )}
-            </TabsContent>
 
             <TabsContent value="consumptions" className="mt-4 space-y-3">
               {consumptions.length === 0 ? (
@@ -392,6 +391,16 @@ export default function CreditCardDetailPage() {
               ) : (
                 consumptions.map((p) => (
                   <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+                ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="installments" className="mt-4 space-y-3">
+              {installments.length === 0 ? (
+                <EmptyTab message="No hay cuotas en este resumen." />
+              ) : (
+                installments.map((p) => (
+                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
                 ))
               )}
             </TabsContent>

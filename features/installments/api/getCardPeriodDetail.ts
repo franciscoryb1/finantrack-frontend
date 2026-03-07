@@ -24,6 +24,7 @@ export type CardPeriodDetail = {
     installmentsCount: number;
     installmentsPaid: number;
     installmentsRemaining: number;
+    category: { id: number; name: string; parent: { id: number; name: string } | null } | null;
     installmentForThisPeriod: {
       installmentNumber: number;
       amountCents: number;
