@@ -15,7 +15,12 @@ import { useCreateMovement } from "../hooks/useCreateMovement";
 import { useCreateCreditCardPurchase } from "@/features/credit-card-purchases/hooks/useCreateCreditCardPurchase";
 import { MovementFormValues } from "../schemas/movement.schema";
 
-export function CreateMovementDialog() {
+type Props = {
+  initialValues?: Partial<MovementFormValues>;
+  label?: string;
+};
+
+export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento" }: Props) {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const createMovement = useCreateMovement();
@@ -57,7 +62,7 @@ export function CreateMovementDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
-          Nuevo movimiento
+          {label}
         </Button>
       </DialogTrigger>
 
@@ -72,7 +77,7 @@ export function CreateMovementDialog() {
           </p>
         )}
 
-        <MovementForm onSubmit={handleSubmit} />
+        <MovementForm onSubmit={handleSubmit} defaultValues={initialValues} />
       </DialogContent>
     </Dialog>
   );
