@@ -17,12 +17,12 @@ import { MovementFormValues } from "../schemas/movement.schema";
 
 export function CreateMovementDialog() {
   const [open, setOpen] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const createMovement = useCreateMovement();
   const createPurchase = useCreateCreditCardPurchase();
 
   async function handleSubmit(values: MovementFormValues) {
-    // Parsear como fecha local (mediodía) para evitar saltos de día por timezone.
-    // new Date("2026-03-01") interpreta como UTC midnight, lo que en UTC-3 es el 28/02.
+    setServerError(null);
     const [y, m, d] = values.occurredAt.split("-").map(Number);
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
@@ -47,13 +47,13 @@ export function CreateMovementDialog() {
         });
       }
       setOpen(false);
-    } catch {
-      // el toast de error lo muestra el hook
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : "Error inesperado");
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
@@ -65,6 +65,12 @@ export function CreateMovementDialog() {
         <DialogHeader>
           <DialogTitle>Nuevo movimiento</DialogTitle>
         </DialogHeader>
+
+        {serverError && (
+          <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+            {serverError}
+          </p>
+        )}
 
         <MovementForm onSubmit={handleSubmit} />
       </DialogContent>

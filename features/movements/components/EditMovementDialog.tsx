@@ -20,8 +20,8 @@ type Props = {
 
 export function EditMovementDialog({ item, open, onOpenChange }: Props) {
   const updateMovement = useUpdateMovement();
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  // Determinar parentCategoryId e initialCategoryId desde el item
   const initialParentCategoryId = item.category?.parent
     ? item.category.parent.id
     : item.category?.id;
@@ -41,29 +41,40 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
   };
 
   async function handleSubmit(values: MovementFormValues) {
+    setServerError(null);
     const [y, m, d] = values.occurredAt.split("-").map(Number);
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
-    await updateMovement.mutateAsync({
-      id: item.id,
-      data: {
-        type: values.type,
-        amountCents: Math.round(values.amount * 100),
-        accountId: values.accountId!,
-        categoryId: values.categoryId,
-        description: values.description || undefined,
-        occurredAt,
-      },
-    });
-    onOpenChange(false);
+    try {
+      await updateMovement.mutateAsync({
+        id: item.id,
+        data: {
+          type: values.type,
+          amountCents: Math.round(values.amount * 100),
+          accountId: values.accountId!,
+          categoryId: values.categoryId,
+          description: values.description || undefined,
+          occurredAt,
+        },
+      });
+      onOpenChange(false);
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : "Error inesperado");
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar movimiento</DialogTitle>
         </DialogHeader>
+
+        {serverError && (
+          <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+            {serverError}
+          </p>
+        )}
 
         <MovementForm
           onSubmit={handleSubmit}
