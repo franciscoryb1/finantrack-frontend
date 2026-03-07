@@ -25,7 +25,6 @@ import {
   Landmark,
   Tag,
   CreditCard,
-  Receipt,
   LogOut,
   Menu,
   User,
@@ -50,8 +49,7 @@ const MAIN_NAV: NavItemDef[] = [
 ];
 
 const CARDS_NAV: NavItemDef[] = [
-  { href: "/credit-cards",  label: "Mis tarjetas", icon: CreditCard },
-  { href: "/installments",  label: "Mis cuotas",   icon: Receipt },
+  { href: "/credit-cards", label: "Tarjetas de crédito", icon: CreditCard },
 ];
 
 // ── NavItem ───────────────────────────────────────────────────────────────────
