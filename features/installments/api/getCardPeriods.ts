@@ -4,6 +4,8 @@ export type CardPeriodItem = {
   year: number;
   month: number;
   status: string;
+  periodStartDate: string;
+  closingDate: string;
 };
 
 export function getCardPeriods(cardId: number) {

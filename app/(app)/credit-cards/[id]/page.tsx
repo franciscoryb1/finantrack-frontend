@@ -58,21 +58,27 @@ function getBrandColor(brand: string | null | undefined) {
   return brand ? (BRAND_COLORS[brand] ?? "#64748b") : "#64748b";
 }
 
-/** Selecciona el período más cercano a hoy: primero el OPEN, luego el mes actual, luego el más reciente pasado. */
+/**
+ * Selecciona el período cuyo rango [periodStartDate, closingDate] contiene hoy.
+ * Si ninguno lo contiene, elige el más reciente anterior a hoy como fallback.
+ */
 function findCurrentPeriod(periods: CardPeriodItem[]): CardPeriodItem {
-  const now = new Date();
-  const curYear = now.getFullYear();
-  const curMonth = now.getMonth() + 1;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const open = periods.find((p) => p.status === "OPEN");
-  if (open) return open;
+  const current = periods.find((p) => {
+    const start = new Date(p.periodStartDate);
+    const close = new Date(p.closingDate);
+    start.setHours(0, 0, 0, 0);
+    close.setHours(23, 59, 59, 999);
+    return today >= start && today <= close;
+  });
+  if (current) return current;
 
-  const exact = periods.find((p) => p.year === curYear && p.month === curMonth);
-  if (exact) return exact;
-
+  // Fallback: más reciente cuyo cierre ya pasó
   const past = [...periods]
-    .filter((p) => p.year * 12 + p.month <= curYear * 12 + curMonth)
-    .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month));
+    .filter((p) => new Date(p.closingDate) < today)
+    .sort((a, b) => new Date(b.closingDate).getTime() - new Date(a.closingDate).getTime());
   if (past.length > 0) return past[0];
 
   return periods[0];
@@ -273,7 +279,6 @@ export default function CreditCardDetailPage() {
               {periods.map((p) => (
                 <SelectItem key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
                   {MONTHS[p.month - 1]} {p.year}
-                  {p.status === "OPEN" && " (actual)"}
                 </SelectItem>
               ))}
             </SelectContent>
