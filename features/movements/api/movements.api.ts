@@ -9,7 +9,7 @@ export type Movement = {
   description: string | null;
   occurredAt: string;
   account: { id: number; name: string; type: string };
-  category: { id: number; name: string; type: string } | null;
+  category: { id: number; name: string; type: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
 };
 
 export type MovementsResponse = {

@@ -42,6 +42,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
+import { CategoryBadge } from "@/components/category-badge";
 import { ChevronLeft, Pencil, Power } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -128,12 +129,6 @@ type Purchase = {
 function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
   const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
   const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
-  const categoryLabel = purchase.category
-    ? purchase.category.parent
-      ? `${purchase.category.parent.name} › ${purchase.category.name}`
-      : purchase.category.name
-    : null;
-
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
@@ -148,8 +143,8 @@ function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProg
             {purchase.installmentsCount > 1 && (
               <span className="text-xs text-muted-foreground">· {formatCurrency(purchase.totalAmountCents)} total</span>
             )}
-            {categoryLabel && (
-              <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{categoryLabel}</Badge>
+            {purchase.category && (
+              <CategoryBadge category={purchase.category} className="text-[10px] h-4 px-1.5" />
             )}
           </div>
         </div>

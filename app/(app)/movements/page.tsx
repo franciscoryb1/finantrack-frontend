@@ -42,7 +42,7 @@ function toActivityItem(m: Movement): DashboardActivityItem {
     creditCard: null,
     installmentInfo: null,
     category: m.category
-      ? { id: m.category.id, name: m.category.name, parent: null }
+      ? { id: m.category.id, name: m.category.name, color: m.category.color, parent: m.category.parent ?? null }
       : null,
   };
 }

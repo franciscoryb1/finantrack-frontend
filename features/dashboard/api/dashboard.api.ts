@@ -9,7 +9,7 @@ export type DashboardActivityItem = {
   registeredAt: string;        // Fecha de registro del movimiento o compra en el sistema.
   amountCents: number;
   type: "INCOME" | "EXPENSE";
-  category: { id: number; name: string; parent: { id: number; name: string } | null } | null;
+  category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   account: { id: number; name: string; type: string } | null;
   creditCard: { id: number; name: string; brand: string | null; cardLast4: string } | null;
   installmentInfo: { installmentNumber: number; installmentsCount: number } | null;

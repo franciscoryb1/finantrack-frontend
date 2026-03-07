@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { CategoryBadge } from "@/components/category-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,11 +141,7 @@ export function MovementsTable({ items, loading }: Props) {
                   {item.category && (
                     <>
                       <span>·</span>
-                      <span>
-                        {item.category.parent
-                          ? `${item.category.parent.name} › ${item.category.name}`
-                          : item.category.name}
-                      </span>
+                      <CategoryBadge category={item.category} className="text-[10px] h-4 px-1.5" />
                     </>
                   )}
                 </div>
@@ -237,14 +234,7 @@ export function MovementsTable({ items, loading }: Props) {
 
                 <td className="px-4 py-3">
                   {item.category ? (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <Badge variant="secondary">
-                        {item.category.parent ? item.category.parent.name : item.category.name}
-                      </Badge>
-                      {item.category.parent && (
-                        <Badge variant="secondary">{item.category.name}</Badge>
-                      )}
-                    </div>
+                    <CategoryBadge category={item.category} />
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
