@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, CreditCard } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, CreditCard, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { MovementsTable } from "@/features/movements/components/MovementsTable";
 import { InstallmentsTable } from "@/features/movements/components/InstallmentsTable";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
 import { ImportLegacyPurchaseDialog } from "@/features/credit-card-purchases/components/ImportLegacyPurchaseDialog";
+import { CreateTransferDialog } from "@/features/account-transfers/components/CreateTransferDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSummary";
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
@@ -127,6 +128,14 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <ImportLegacyPurchaseDialog />
+          <CreateTransferDialog
+            trigger={
+              <Button variant="outline" size="sm">
+                <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+                Transferir
+              </Button>
+            }
+          />
           <CreateMovementDialog />
         </div>
       </div>

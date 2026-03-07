@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { AccountItem, TYPE_CONFIG } from "@/features/accounts/components/AccountItem";
 import { CreateAccountDialog } from "@/features/accounts/components/CreateAccountDialog";
+import { CreateTransferDialog } from "@/features/account-transfers/components/CreateTransferDialog";
 import { Account, AccountType } from "@/features/accounts/api/accounts.api";
 import { formatCurrency } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, ArrowLeftRight } from "lucide-react";
 
 // ── Orden de grupos ───────────────────────────────────────────────────────────
 
@@ -110,10 +111,20 @@ export default function AccountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Mis cuentas</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Nueva cuenta
-        </Button>
+        <div className="flex items-center gap-2">
+          <CreateTransferDialog
+            trigger={
+              <Button variant="outline" size="sm">
+                <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+                Transferir
+              </Button>
+            }
+          />
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nueva cuenta
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

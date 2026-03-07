@@ -28,12 +28,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, CreditCard } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, CreditCard, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditMovementDialog } from "./EditMovementDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
 
 const PAGE_SIZE = 10;
+
+type ItemType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
+
+function isSystemGenerated(type: ItemType) {
+  return type === "STATEMENT_PAYMENT" || type === "TRANSFER_OUT" || type === "TRANSFER_IN";
+}
+
+function getAmountColor(type: ItemType) {
+  if (type === "INCOME") return "text-green-700 dark:text-green-400";
+  if (type === "TRANSFER_OUT" || type === "TRANSFER_IN" || type === "STATEMENT_PAYMENT")
+    return "text-blue-700 dark:text-blue-400";
+  return "text-red-700 dark:text-red-400";
+}
+
+function getBarColor(type: ItemType) {
+  if (type === "INCOME") return "bg-green-500";
+  if (type === "TRANSFER_OUT" || type === "TRANSFER_IN" || type === "STATEMENT_PAYMENT")
+    return "bg-blue-400";
+  return "bg-red-500";
+}
+
+function getAmountPrefix(type: ItemType) {
+  return type === "INCOME" || type === "TRANSFER_IN" ? "+" : "-";
+}
+
+function SystemIcon({ type }: { type: ItemType }) {
+  if (type === "TRANSFER_OUT" || type === "TRANSFER_IN")
+    return <ArrowLeftRight className="h-4 w-4 text-blue-400" />;
+  if (type === "STATEMENT_PAYMENT")
+    return <CreditCard className="h-4 w-4 text-blue-400" />;
+  return null;
+}
 
 type Props = {
   items: DashboardActivityItem[];
@@ -118,10 +150,7 @@ export function MovementsTable({ items, loading }: Props) {
               key={`${item.kind}-${item.id}`}
               className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
             >
-              <div className={cn(
-                "w-1 self-stretch rounded-full shrink-0",
-                item.type === "INCOME" ? "bg-green-500" : item.type === "STATEMENT_PAYMENT" ? "bg-blue-400" : "bg-red-500",
-              )} />
+              <div className={cn("w-1 self-stretch rounded-full shrink-0", getBarColor(item.type as ItemType))} />
 
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm leading-snug truncate">
@@ -148,15 +177,8 @@ export function MovementsTable({ items, loading }: Props) {
 
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
-                  <p className={cn(
-                    "font-semibold tabular-nums text-sm",
-                    item.type === "INCOME"
-                      ? "text-green-700 dark:text-green-400"
-                      : item.type === "STATEMENT_PAYMENT"
-                      ? "text-blue-700 dark:text-blue-400"
-                      : "text-red-700 dark:text-red-400",
-                  )}>
-                    {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
+                  <p className={cn("font-semibold tabular-nums text-sm", getAmountColor(item.type as ItemType))}>
+                    {getAmountPrefix(item.type as ItemType)}{formatCurrency(item.amountCents)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {formatDate(item.purchaseDate ?? item.occurredAt)}
@@ -166,7 +188,7 @@ export function MovementsTable({ items, loading }: Props) {
                   </p>
                 </div>
 
-                {item.kind === "MOVEMENT" && item.type !== "STATEMENT_PAYMENT" && (
+                {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
@@ -188,9 +210,9 @@ export function MovementsTable({ items, loading }: Props) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                {item.kind === "MOVEMENT" && item.type === "STATEMENT_PAYMENT" && (
+                {item.kind === "MOVEMENT" && isSystemGenerated(item.type as ItemType) && (
                   <div className="h-7 w-7 shrink-0 flex items-center justify-center">
-                    <CreditCard className="h-4 w-4 text-blue-400" />
+                    <SystemIcon type={item.type as ItemType} />
                   </div>
                 )}
               </div>
@@ -250,19 +272,12 @@ export function MovementsTable({ items, loading }: Props) {
                   <ItemSource item={item} />
                 </td>
 
-                <td className={cn(
-                  "px-4 py-3 text-right font-semibold tabular-nums",
-                  item.type === "INCOME"
-                    ? "text-green-700 dark:text-green-400"
-                    : item.type === "STATEMENT_PAYMENT"
-                    ? "text-blue-700 dark:text-blue-400"
-                    : "text-red-700 dark:text-red-400",
-                )}>
-                  {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
+                <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", getAmountColor(item.type as ItemType))}>
+                  {getAmountPrefix(item.type as ItemType)}{formatCurrency(item.amountCents)}
                 </td>
 
                 <td className="px-2 py-3">
-                  {item.kind === "MOVEMENT" && item.type !== "STATEMENT_PAYMENT" && (
+                  {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -284,9 +299,9 @@ export function MovementsTable({ items, loading }: Props) {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
-                  {item.kind === "MOVEMENT" && item.type === "STATEMENT_PAYMENT" && (
+                  {item.kind === "MOVEMENT" && isSystemGenerated(item.type as ItemType) && (
                     <div className="h-7 w-7 flex items-center justify-center">
-                      <CreditCard className="h-4 w-4 text-blue-400" />
+                      <SystemIcon type={item.type as ItemType} />
                     </div>
                   )}
                 </td>
