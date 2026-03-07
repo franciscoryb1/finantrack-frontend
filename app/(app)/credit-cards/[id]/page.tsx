@@ -7,12 +7,14 @@ import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { useToggleCreditCard } from "@/features/credit-cards/hooks/useToggleCreditCard";
 import { useCardPeriods } from "@/features/installments/hooks/useCardPeriods";
 import { useCardPeriodDetail } from "@/features/installments/hooks/useCardPeriodDetail";
+import { CardPeriodItem } from "@/features/installments/api/getCardPeriods";
 import { EditCreditCardDialog } from "@/features/credit-cards/components/EditCreditCardDialog";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectTrigger,
@@ -56,6 +58,26 @@ function getBrandColor(brand: string | null | undefined) {
   return brand ? (BRAND_COLORS[brand] ?? "#64748b") : "#64748b";
 }
 
+/** Selecciona el período más cercano a hoy: primero el OPEN, luego el mes actual, luego el más reciente pasado. */
+function findCurrentPeriod(periods: CardPeriodItem[]): CardPeriodItem {
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+
+  const open = periods.find((p) => p.status === "OPEN");
+  if (open) return open;
+
+  const exact = periods.find((p) => p.year === curYear && p.month === curMonth);
+  if (exact) return exact;
+
+  const past = [...periods]
+    .filter((p) => p.year * 12 + p.month <= curYear * 12 + curMonth)
+    .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month));
+  if (past.length > 0) return past[0];
+
+  return periods[0];
+}
+
 function StatementStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
     OPEN:   { label: "Abierto",  className: "bg-blue-500 text-white hover:bg-blue-500" },
@@ -74,6 +96,67 @@ function InstallmentStatusBadge({ status }: { status: string }) {
   };
   const cfg = config[status] ?? { label: status, className: "" };
   return <Badge className={cfg.className}>{cfg.label}</Badge>;
+}
+
+// ── Purchase card ─────────────────────────────────────────────────────────────
+
+type Purchase = {
+  purchaseId: number;
+  description: string | null;
+  occurredAt: string;
+  totalAmountCents: number;
+  installmentsCount: number;
+  installmentForThisPeriod: { installmentNumber: number; amountCents: number; status: string };
+};
+
+function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
+  const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
+  const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-semibold truncate">
+            {purchase.description ?? (
+              <span className="italic text-muted-foreground">Sin descripción</span>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {formatDate(purchase.occurredAt)}
+            {purchase.installmentsCount > 1 && (
+              <> · {formatCurrency(purchase.totalAmountCents)} total</>
+            )}
+          </p>
+        </div>
+        <div className="shrink-0 text-right space-y-1">
+          <p className="font-bold">{formatCurrency(amountCents)}</p>
+          <InstallmentStatusBadge status={status} />
+        </div>
+      </div>
+
+      {showProgress && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Cuota {installmentNumber} de {purchase.installmentsCount}</span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function EmptyTab({ message }: { message: string }) {
+  return (
+    <p className="text-center text-muted-foreground text-sm py-10">{message}</p>
+  );
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -98,16 +181,22 @@ export default function CreditCardDetailPage() {
 
   useEffect(() => {
     if (!selectedPeriod && periods && periods.length > 0) {
-      setSelectedPeriod({ year: periods[0].year, month: periods[0].month });
+      const current = findCurrentPeriod(periods);
+      setSelectedPeriod({ year: current.year, month: current.month });
     }
   }, [periods, selectedPeriod]);
 
   const isLoading = loadingPeriods || loadingDetail;
 
-  const totalToPay = data?.purchases.reduce(
-    (sum, p) => sum + p.installmentForThisPeriod.amountCents,
-    0,
-  ) ?? 0;
+  const sortedPurchases = [...(data?.purchases ?? [])].sort(
+    (a, b) => b.installmentForThisPeriod.amountCents - a.installmentForThisPeriod.amountCents,
+  );
+  const installments = sortedPurchases.filter((p) => p.installmentsCount > 1);
+  const consumptions = sortedPurchases.filter((p) => p.installmentsCount === 1);
+
+  const totalToPay = sortedPurchases.reduce(
+    (sum, p) => sum + p.installmentForThisPeriod.amountCents, 0,
+  );
 
   const brandColor = getBrandColor(card?.brand);
 
@@ -169,7 +258,7 @@ export default function CreditCardDetailPage() {
       {/* Period selector */}
       {periods && periods.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">Período:</span>
+          <span className="text-sm font-medium text-muted-foreground">Resumen:</span>
           <Select
             value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.month}` : ""}
             onValueChange={(val) => {
@@ -184,6 +273,7 @@ export default function CreditCardDetailPage() {
               {periods.map((p) => (
                 <SelectItem key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
                   {MONTHS[p.month - 1]} {p.year}
+                  {p.status === "OPEN" && " (actual)"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -216,11 +306,11 @@ export default function CreditCardDetailPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="col-span-2 sm:col-span-2 rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
+              <div className="col-span-2 rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
                 <p className="text-xs text-muted-foreground">Total a pagar</p>
                 <p className="text-2xl font-bold">{formatCurrency(totalToPay)}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {data.purchases.length} compra{data.purchases.length !== 1 ? "s" : ""}
+                  {installments.length} cuota{installments.length !== 1 ? "s" : ""} · {consumptions.length} consumo{consumptions.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <div className="rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
@@ -234,62 +324,43 @@ export default function CreditCardDetailPage() {
             </div>
           </div>
 
-          {/* Purchases list */}
-          {data.purchases.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-8">
-              No hay compras en este período.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Compras del período
-              </h2>
-              {[...data.purchases]
-                .sort((a, b) => b.installmentForThisPeriod.amountCents - a.installmentForThisPeriod.amountCents)
-                .map((purchase) => {
-                  const { installmentNumber, installmentsCount } = {
-                    installmentNumber: purchase.installmentForThisPeriod.installmentNumber,
-                    installmentsCount: purchase.installmentsCount,
-                  };
-                  const progressPercent = Math.round((installmentNumber / installmentsCount) * 100);
+          {/* Tabs: Cuotas / Consumos */}
+          <Tabs defaultValue="installments">
+            <TabsList className="w-full">
+              <TabsTrigger value="installments" className="flex-1">
+                Cuotas
+                {installments.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">{installments.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="consumptions" className="flex-1">
+                Consumos
+                {consumptions.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">{consumptions.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-                  return (
-                    <Card key={purchase.purchaseId} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">
-                            {purchase.description ?? (
-                              <span className="italic text-muted-foreground">Sin descripción</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatDate(purchase.occurredAt)} · {formatCurrency(purchase.totalAmountCents)} total
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="font-bold">{formatCurrency(purchase.installmentForThisPeriod.amountCents)}</p>
-                          <InstallmentStatusBadge status={purchase.installmentForThisPeriod.status} />
-                        </div>
-                      </div>
+            <TabsContent value="installments" className="mt-4 space-y-3">
+              {installments.length === 0 ? (
+                <EmptyTab message="No hay cuotas en este resumen." />
+              ) : (
+                installments.map((p) => (
+                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
+                ))
+              )}
+            </TabsContent>
 
-                      {/* Progress bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Cuota {installmentNumber} de {installmentsCount}</span>
-                          <span>{progressPercent}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all"
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-            </div>
-          )}
+            <TabsContent value="consumptions" className="mt-4 space-y-3">
+              {consumptions.length === 0 ? (
+                <EmptyTab message="No hay consumos en este resumen." />
+              ) : (
+                consumptions.map((p) => (
+                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </>
       )}
 
