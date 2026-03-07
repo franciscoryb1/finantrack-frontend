@@ -49,3 +49,7 @@ export function activateAccount(id: number) {
 export function deactivateAccount(id: number) {
   return apiFetch<Account>(`/accounts/${id}/deactivate`, { method: "PATCH" });
 }
+
+export function deleteAccount(id: number) {
+  return apiFetch<void>(`/accounts/${id}`, { method: "DELETE" });
+}

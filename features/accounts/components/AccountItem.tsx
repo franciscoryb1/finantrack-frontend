@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Account, AccountType } from "../api/accounts.api";
 import { useToggleAccount } from "../hooks/useToggleAccount";
 import { useUpdateAccount } from "../hooks/useUpdateAccount";
+import { useDeleteAccount } from "../hooks/useDeleteAccount";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency, cn } from "@/lib/utils";
-import { Wallet, Building2, Smartphone, Pencil, Check, X } from "lucide-react";
+import { Wallet, Building2, Smartphone, Pencil, Check, X, Trash2 } from "lucide-react";
 
 // ── Config por tipo ───────────────────────────────────────────────────────────
 
@@ -39,9 +40,11 @@ export function AccountItem({ account }: Props) {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(account.name);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const toggle = useToggleAccount();
   const update = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
 
   const cfg = TYPE_CONFIG[account.type];
   const Icon = cfg.Icon;
@@ -123,6 +126,13 @@ export function AccountItem({ account }: Props) {
               <Pencil className="h-3.5 w-3.5" />
             </Button>
             <Button
+              variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+              title="Eliminar"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
               variant="outline" size="sm" className="h-7 text-xs"
               disabled={toggle.isPending}
               onClick={handleToggleClick}
@@ -145,6 +155,26 @@ export function AccountItem({ account }: Props) {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setConfirmDeactivate(false); toggle.mutate({ id: account.id, activate: false }); }}>
               Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar "{account.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción es permanente y no se puede deshacer. Los movimientos asociados a esta cuenta podrían verse afectados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setConfirmDelete(false); deleteAccount.mutate(account.id); }}
+            >
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
