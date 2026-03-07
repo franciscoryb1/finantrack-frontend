@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditMovementDialog } from "./EditMovementDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
@@ -120,7 +120,7 @@ export function MovementsTable({ items, loading }: Props) {
             >
               <div className={cn(
                 "w-1 self-stretch rounded-full shrink-0",
-                item.type === "INCOME" ? "bg-green-500" : "bg-red-500",
+                item.type === "INCOME" ? "bg-green-500" : item.type === "STATEMENT_PAYMENT" ? "bg-blue-400" : "bg-red-500",
               )} />
 
               <div className="flex-1 min-w-0">
@@ -152,6 +152,8 @@ export function MovementsTable({ items, loading }: Props) {
                     "font-semibold tabular-nums text-sm",
                     item.type === "INCOME"
                       ? "text-green-700 dark:text-green-400"
+                      : item.type === "STATEMENT_PAYMENT"
+                      ? "text-blue-700 dark:text-blue-400"
                       : "text-red-700 dark:text-red-400",
                   )}>
                     {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
@@ -164,7 +166,7 @@ export function MovementsTable({ items, loading }: Props) {
                   </p>
                 </div>
 
-                {item.kind === "MOVEMENT" && (
+                {item.kind === "MOVEMENT" && item.type !== "STATEMENT_PAYMENT" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
@@ -185,6 +187,11 @@ export function MovementsTable({ items, loading }: Props) {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                )}
+                {item.kind === "MOVEMENT" && item.type === "STATEMENT_PAYMENT" && (
+                  <div className="h-7 w-7 shrink-0 flex items-center justify-center">
+                    <CreditCard className="h-4 w-4 text-blue-400" />
+                  </div>
                 )}
               </div>
             </div>
@@ -247,13 +254,15 @@ export function MovementsTable({ items, loading }: Props) {
                   "px-4 py-3 text-right font-semibold tabular-nums",
                   item.type === "INCOME"
                     ? "text-green-700 dark:text-green-400"
+                    : item.type === "STATEMENT_PAYMENT"
+                    ? "text-blue-700 dark:text-blue-400"
                     : "text-red-700 dark:text-red-400",
                 )}>
                   {item.type === "INCOME" ? "+" : "-"}{formatCurrency(item.amountCents)}
                 </td>
 
                 <td className="px-2 py-3">
-                  {item.kind === "MOVEMENT" && (
+                  {item.kind === "MOVEMENT" && item.type !== "STATEMENT_PAYMENT" && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -274,6 +283,11 @@ export function MovementsTable({ items, loading }: Props) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  )}
+                  {item.kind === "MOVEMENT" && item.type === "STATEMENT_PAYMENT" && (
+                    <div className="h-7 w-7 flex items-center justify-center">
+                      <CreditCard className="h-4 w-4 text-blue-400" />
+                    </div>
                   )}
                 </td>
               </tr>

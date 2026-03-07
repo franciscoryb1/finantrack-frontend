@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 
-export type MovementType = "INCOME" | "EXPENSE";
+export type MovementType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT";
 
 export type Movement = {
   id: number;

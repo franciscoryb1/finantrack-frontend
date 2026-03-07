@@ -8,6 +8,8 @@ import { useToggleCreditCard } from "@/features/credit-cards/hooks/useToggleCred
 import { useCardPeriods } from "@/features/installments/hooks/useCardPeriods";
 import { useCardPeriodDetail } from "@/features/installments/hooks/useCardPeriodDetail";
 import { useUpdateStatementDates } from "@/features/installments/hooks/useUpdateStatementDates";
+import { useCloseStatement } from "@/features/credit-cards/hooks/useCloseStatement";
+import { PayStatementDialog } from "@/features/credit-cards/components/PayStatementDialog";
 import { CardPeriodItem } from "@/features/installments/api/getCardPeriods";
 import { EditCreditCardDialog } from "@/features/credit-cards/components/EditCreditCardDialog";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
@@ -43,7 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
-import { ChevronLeft, Pencil, Power } from "lucide-react";
+import { ChevronLeft, Pencil, Power, Lock, CreditCard } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -185,12 +187,15 @@ export default function CreditCardDetailPage() {
   const cardId = Number(params.id);
 
   const [confirmToggle, setConfirmToggle] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [payStatementOpen, setPayStatementOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<{ year: number; month: number } | null>(null);
   const [editDatesOpen, setEditDatesOpen] = useState(false);
   const [draftClosing, setDraftClosing] = useState("");
   const [draftDue, setDraftDue] = useState("");
 
   const updateDates = useUpdateStatementDates(cardId);
+  const closeStatement = useCloseStatement(cardId);
   const { data: cards } = useCreditCards();
   const card = cards?.find((c) => c.id === cardId);
   const toggle = useToggleCreditCard(cardId);
@@ -328,18 +333,40 @@ export default function CreditCardDetailPage() {
               <div className="flex items-center gap-2">
                 <StatementStatusBadge status={data.period.status} />
                 {data.period.status === "OPEN" && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="Editar fechas del resumen"
+                      onClick={() => {
+                        setDraftClosing(data.period.closingDate.slice(0, 10));
+                        setDraftDue(data.period.dueDate.slice(0, 10));
+                        setEditDatesOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      title="Cerrar resumen"
+                      onClick={() => setConfirmClose(true)}
+                    >
+                      <Lock className="h-3 w-3" />
+                      Cerrar
+                    </Button>
+                  </>
+                )}
+                {data.period.status === "CLOSED" && (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    title="Editar fechas del resumen"
-                    onClick={() => {
-                      setDraftClosing(data.period.closingDate.slice(0, 10));
-                      setDraftDue(data.period.dueDate.slice(0, 10));
-                      setEditDatesOpen(true);
-                    }}
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => setPayStatementOpen(true)}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <CreditCard className="h-3 w-3" />
+                    Pagar resumen
                   </Button>
                 )}
               </div>
@@ -455,6 +482,43 @@ export default function CreditCardDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Pagar resumen */}
+      {data && (
+        <PayStatementDialog
+          open={payStatementOpen}
+          onOpenChange={setPayStatementOpen}
+          statementId={data.period.id}
+          totalCents={data.period.totalCents}
+          cardId={cardId}
+        />
+      )}
+
+      {/* Cerrar resumen */}
+      {data && (
+        <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cerrar este resumen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Se calcularán los totales del período y el resumen pasará a estado{" "}
+                <strong>Cerrado</strong>. No se podrán agregar ni quitar compras del período.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmClose(false);
+                  closeStatement.mutate(data.period.id);
+                }}
+              >
+                Cerrar resumen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {/* Toggle confirmation dialog */}
       {card && (
