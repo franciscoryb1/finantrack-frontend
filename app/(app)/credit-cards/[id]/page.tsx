@@ -10,6 +10,7 @@ import { useCardPeriodDetail } from "@/features/installments/hooks/useCardPeriod
 import { useUpdateStatementDates } from "@/features/installments/hooks/useUpdateStatementDates";
 import { useCloseStatement } from "@/features/credit-cards/hooks/useCloseStatement";
 import { PayStatementDialog } from "@/features/credit-cards/components/PayStatementDialog";
+import { CreditCardVisual } from "@/features/credit-cards/components/CreditCardVisual";
 import { CardPeriodItem } from "@/features/installments/api/getCardPeriods";
 import { EditCreditCardDialog } from "@/features/credit-cards/components/EditCreditCardDialog";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
@@ -45,7 +46,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
-import { ChevronLeft, Pencil, Power, Lock, CreditCard } from "lucide-react";
+import { ChevronLeft, Pencil, Power, Lock, CreditCard, ShoppingBag } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,23 +62,9 @@ function formatDate(iso: string) {
   });
 }
 
-const BRAND_COLORS: Record<string, string> = {
-  VISA: "#1A1F71",
-  MASTERCARD: "#EB001B",
-};
-
-function getBrandColor(brand: string | null | undefined) {
-  return brand ? (BRAND_COLORS[brand] ?? "#64748b") : "#64748b";
-}
-
-/**
- * Selecciona el período cuyo rango [periodStartDate, closingDate] contiene hoy.
- * Si ninguno lo contiene, elige el más reciente anterior a hoy como fallback.
- */
 function findCurrentPeriod(periods: CardPeriodItem[]): CardPeriodItem {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const current = periods.find((p) => {
     const start = new Date(p.periodStartDate);
     const close = new Date(p.closingDate);
@@ -86,34 +73,32 @@ function findCurrentPeriod(periods: CardPeriodItem[]): CardPeriodItem {
     return today >= start && today <= close;
   });
   if (current) return current;
-
-  // Fallback: más reciente cuyo cierre ya pasó
   const past = [...periods]
     .filter((p) => new Date(p.closingDate) < today)
     .sort((a, b) => new Date(b.closingDate).getTime() - new Date(a.closingDate).getTime());
-  if (past.length > 0) return past[0];
-
-  return periods[0];
+  return past.length > 0 ? past[0] : periods[0];
 }
+
+// ── Statement status badge ────────────────────────────────────────────────────
 
 function StatementStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    OPEN:   { label: "Abierto",  className: "bg-blue-500 text-white hover:bg-blue-500" },
-    CLOSED: { label: "Cerrado",  className: "bg-amber-500 text-white hover:bg-amber-500" },
-    PAID:   { label: "Pagado",   className: "bg-green-600 text-white hover:bg-green-600" },
+    OPEN:   { label: "Abierto",  className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
+    CLOSED: { label: "Cerrado",  className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
+    PAID:   { label: "Pagado",   className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
   };
   const cfg = config[status] ?? { label: status, className: "" };
-  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+  return <Badge className={cn("text-[11px] font-medium px-2 h-5", cfg.className)}>{cfg.label}</Badge>;
 }
 
 function InstallmentStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    PENDING: { label: "Pendiente", className: "bg-amber-500 text-white hover:bg-amber-500" },
-    BILLED:  { label: "Facturada", className: "bg-yellow-500 text-white hover:bg-yellow-500" },
-    PAID:    { label: "Pagada",    className: "bg-green-600 text-white hover:bg-green-600" },
+    PENDING: { label: "Pendiente", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
+    BILLED:  { label: "Facturada", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
+    PAID:    { label: "Pagada",    className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
   };
   const cfg = config[status] ?? { label: status, className: "" };
-  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+  return <Badge className={cn("text-[11px] font-medium px-2 h-5", cfg.className)}>{cfg.label}</Badge>;
 }
 
 // ── Purchase card ─────────────────────────────────────────────────────────────
@@ -131,27 +116,34 @@ type Purchase = {
 function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
   const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
   const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
+
   return (
-    <Card className="p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-semibold truncate">
+    <Card className="p-4 space-y-3 border-border/60">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm leading-snug truncate">
             {purchase.description ?? (
               <span className="italic text-muted-foreground">Sin descripción</span>
             )}
           </p>
-          <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
             <span className="text-xs text-muted-foreground">{formatDate(purchase.occurredAt)}</span>
             {purchase.installmentsCount > 1 && (
-              <span className="text-xs text-muted-foreground">· {formatCurrency(purchase.totalAmountCents)} total</span>
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="text-xs text-muted-foreground">{formatCurrency(purchase.totalAmountCents)} total</span>
+              </>
             )}
             {purchase.category && (
-              <CategoryBadge category={purchase.category} className="text-[10px] h-4 px-1.5" />
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <CategoryBadge category={purchase.category} className="text-[10px] h-4 px-1.5" />
+              </>
             )}
           </div>
         </div>
-        <div className="shrink-0 text-right space-y-1">
-          <p className="font-bold">{formatCurrency(amountCents)}</p>
+        <div className="shrink-0 text-right space-y-1.5">
+          <p className="font-bold text-sm tabular-nums">{formatCurrency(amountCents)}</p>
           <InstallmentStatusBadge status={status} />
         </div>
       </div>
@@ -227,10 +219,8 @@ export default function CreditCardDetailPage() {
     (sum, p) => sum + p.installmentForThisPeriod.amountCents, 0,
   );
 
-  const brandColor = getBrandColor(card?.brand);
-
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto">
       {/* Back */}
       <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
         <Link href="/credit-cards">
@@ -239,55 +229,44 @@ export default function CreditCardDetailPage() {
         </Link>
       </Button>
 
-      {/* Card header */}
-      <div className="rounded-2xl border overflow-hidden">
-        <div className="h-2 w-full" style={{ backgroundColor: brandColor }} />
-        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{card?.name ?? "Tarjeta"}</h1>
-              {card?.brand && (
-                <Badge variant="outline" style={{ color: brandColor, borderColor: brandColor }} className="font-bold text-[10px]">
-                  {card.brand}
-                </Badge>
-              )}
-              {card && !card.isActive && (
-                <Badge variant="destructive">Inactiva</Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">···· {card?.cardLast4}</p>
-            {card?.bankAccount && (
-              <p className="text-xs text-muted-foreground">Débito: {card.bankAccount.name}</p>
-            )}
-          </div>
+      {/* ── Card visual + actions ── */}
+      <div className="space-y-4">
+        {card ? (
+          <CreditCardVisual
+            card={card}
+            backgroundColor={data?.card.backgroundColor ?? null}
+          />
+        ) : (
+          <Skeleton className="w-full rounded-2xl" style={{ aspectRatio: "1.586" }} />
+        )}
 
-          <div className="flex items-center gap-2 shrink-0">
-            <CreateMovementDialog
-              label="Nueva compra"
-              initialValues={{
-                type: "EXPENSE",
-                paymentMethod: "CREDIT_CARD",
-                creditCardId: cardId,
-                installmentsCount: 1,
-              }}
-            />
-            {card && <EditCreditCardDialog card={card} />}
-            <Button
-              variant="ghost"
-              size="icon"
-              title={card?.isActive ? "Desactivar tarjeta" : "Activar tarjeta"}
-              onClick={() => setConfirmToggle(true)}
-            >
-              <Power className={cn("h-4 w-4", card?.isActive ? "text-green-600" : "text-destructive")} />
-            </Button>
-          </div>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 justify-end">
+          <CreateMovementDialog
+            label="Nueva compra"
+            initialValues={{
+              type: "EXPENSE",
+              paymentMethod: "CREDIT_CARD",
+              creditCardId: cardId,
+              installmentsCount: 1,
+            }}
+          />
+          {card && <EditCreditCardDialog card={card} />}
+          <Button
+            variant="outline"
+            size="icon"
+            title={card?.isActive ? "Desactivar tarjeta" : "Activar tarjeta"}
+            onClick={() => setConfirmToggle(true)}
+          >
+            <Power className={cn("h-4 w-4", card?.isActive ? "text-emerald-600" : "text-destructive")} />
+          </Button>
         </div>
       </div>
 
-      {/* Period selector */}
+      {/* ── Period selector ── */}
       {periods && periods.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">Resumen:</span>
+          <span className="text-sm text-muted-foreground">Resumen</span>
           <Select
             value={activePeriod ? `${activePeriod.year}-${activePeriod.month}` : ""}
             onValueChange={(val) => {
@@ -309,11 +288,15 @@ export default function CreditCardDetailPage() {
         </div>
       )}
 
+      {/* ── Statement detail ── */}
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-40 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-40" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-14" />
+            <Skeleton className="h-14" />
+          </div>
+          <Skeleton className="h-10 w-full" />
         </div>
       ) : !data ? (
         <div className="text-center py-12 text-muted-foreground text-sm">
@@ -321,24 +304,25 @@ export default function CreditCardDetailPage() {
         </div>
       ) : (
         <>
-          {/* Statement summary */}
-          <div
-            className="rounded-2xl border p-5 space-y-4"
-            style={{ backgroundColor: data.card.backgroundColor ?? undefined }}
-          >
+          {/* Statement summary card */}
+          <div className="rounded-2xl border bg-card p-5 space-y-4">
+            {/* Header row: period + status + actions */}
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                {MONTHS[data.period.month - 1]} {data.period.year}
-              </p>
               <div className="flex items-center gap-2">
+                <p className="font-semibold">
+                  {MONTHS[data.period.month - 1]} {data.period.year}
+                </p>
                 <StatementStatusBadge status={data.period.status} />
+              </div>
+
+              <div className="flex items-center gap-1.5">
                 {data.period.status === "OPEN" && (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      title="Editar fechas del resumen"
+                      title="Editar fechas"
                       onClick={() => {
                         setDraftClosing(data.period.closingDate.slice(0, 10));
                         setDraftDue(data.period.dueDate.slice(0, 10));
@@ -351,7 +335,6 @@ export default function CreditCardDetailPage() {
                       variant="outline"
                       size="sm"
                       className="h-7 text-xs gap-1"
-                      title="Cerrar resumen"
                       onClick={() => setConfirmClose(true)}
                     >
                       <Lock className="h-3 w-3" />
@@ -366,44 +349,53 @@ export default function CreditCardDetailPage() {
                     onClick={() => setPayStatementOpen(true)}
                   >
                     <CreditCard className="h-3 w-3" />
-                    Pagar resumen
+                    Pagar
                   </Button>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="col-span-2 rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
-                <p className="text-xs text-muted-foreground">Total a pagar</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalToPay)}</p>
+            {/* Amounts */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
+                  {data.period.status === "OPEN" ? "Acumulado" : "Total"}
+                </p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {formatCurrency(data.period.status === "OPEN" ? totalToPay : data.period.totalCents)}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {installments.length} cuota{installments.length !== 1 ? "s" : ""} · {consumptions.length} consumo{consumptions.length !== 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
-                <p className="text-xs text-muted-foreground">Cierre</p>
-                <p className="font-semibold text-sm">{formatDate(data.period.closingDate)}</p>
-              </div>
-              <div className="rounded-xl bg-white/80 dark:bg-slate-950/80 border p-4">
-                <p className="text-xs text-muted-foreground">Vencimiento</p>
-                <p className="font-semibold text-sm">{formatDate(data.period.dueDate)}</p>
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Cierre</p>
+                  <p className="text-sm font-medium">{formatDate(data.period.closingDate)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Vencimiento</p>
+                  <p className="text-sm font-medium">{formatDate(data.period.dueDate)}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Tabs: Cuotas / Consumos */}
+          {/* ── Tabs: Consumos / Cuotas ── */}
           <Tabs defaultValue="consumptions">
             <TabsList className="w-full">
-              <TabsTrigger value="consumptions" className="flex-1">
+              <TabsTrigger value="consumptions" className="flex-1 gap-1.5">
+                <ShoppingBag className="h-3.5 w-3.5" />
                 Consumos
                 {consumptions.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">{consumptions.length}</Badge>
+                  <Badge variant="secondary" className="text-xs h-4 px-1.5">{consumptions.length}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="installments" className="flex-1">
+              <TabsTrigger value="installments" className="flex-1 gap-1.5">
+                <CreditCard className="h-3.5 w-3.5" />
                 Cuotas
                 {installments.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">{installments.length}</Badge>
+                  <Badge variant="secondary" className="text-xs h-4 px-1.5">{installments.length}</Badge>
                 )}
               </TabsTrigger>
             </TabsList>
@@ -431,7 +423,7 @@ export default function CreditCardDetailPage() {
         </>
       )}
 
-      {/* Editar fechas del resumen */}
+      {/* ── Editar fechas ── */}
       <Dialog open={editDatesOpen} onOpenChange={setEditDatesOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -457,9 +449,7 @@ export default function CreditCardDetailPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" onClick={() => setEditDatesOpen(false)}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setEditDatesOpen(false)}>Cancelar</Button>
               <Button
                 disabled={updateDates.isPending}
                 onClick={async () => {
@@ -471,9 +461,7 @@ export default function CreditCardDetailPage() {
                       dueDate: draftDue ? new Date(draftDue + "T12:00:00").toISOString() : undefined,
                     });
                     setEditDatesOpen(false);
-                  } catch {
-                    // toast shown by hook
-                  }
+                  } catch { /* toast shown by hook */ }
                 }}
               >
                 Guardar
@@ -483,7 +471,7 @@ export default function CreditCardDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Pagar resumen */}
+      {/* ── Pagar resumen ── */}
       {data && (
         <PayStatementDialog
           open={payStatementOpen}
@@ -494,7 +482,7 @@ export default function CreditCardDetailPage() {
         />
       )}
 
-      {/* Cerrar resumen */}
+      {/* ── Cerrar resumen ── */}
       {data && (
         <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
           <AlertDialogContent>
@@ -507,12 +495,7 @@ export default function CreditCardDetailPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setConfirmClose(false);
-                  closeStatement.mutate(data.period.id);
-                }}
-              >
+              <AlertDialogAction onClick={() => { setConfirmClose(false); closeStatement.mutate(data.period.id); }}>
                 Cerrar resumen
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -520,7 +503,7 @@ export default function CreditCardDetailPage() {
         </AlertDialog>
       )}
 
-      {/* Toggle confirmation dialog */}
+      {/* ── Toggle tarjeta ── */}
       {card && (
         <AlertDialog open={confirmToggle} onOpenChange={setConfirmToggle}>
           <AlertDialogContent>
@@ -536,12 +519,7 @@ export default function CreditCardDetailPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setConfirmToggle(false);
-                  toggle.mutate(card.isActive);
-                }}
-              >
+              <AlertDialogAction onClick={() => { setConfirmToggle(false); toggle.mutate(card.isActive); }}>
                 {card.isActive ? "Desactivar" : "Activar"}
               </AlertDialogAction>
             </AlertDialogFooter>
