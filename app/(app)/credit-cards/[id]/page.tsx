@@ -7,6 +7,7 @@ import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { useToggleCreditCard } from "@/features/credit-cards/hooks/useToggleCreditCard";
 import { useCardPeriods } from "@/features/installments/hooks/useCardPeriods";
 import { useCardPeriodDetail } from "@/features/installments/hooks/useCardPeriodDetail";
+import { useUpdateStatementDates } from "@/features/installments/hooks/useUpdateStatementDates";
 import { CardPeriodItem } from "@/features/installments/api/getCardPeriods";
 import { EditCreditCardDialog } from "@/features/credit-cards/components/EditCreditCardDialog";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
@@ -32,8 +33,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
-import { ChevronLeft, Power } from "lucide-react";
+import { ChevronLeft, Pencil, Power } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -173,7 +182,11 @@ export default function CreditCardDetailPage() {
 
   const [confirmToggle, setConfirmToggle] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<{ year: number; month: number } | null>(null);
+  const [editDatesOpen, setEditDatesOpen] = useState(false);
+  const [draftClosing, setDraftClosing] = useState("");
+  const [draftDue, setDraftDue] = useState("");
 
+  const updateDates = useUpdateStatementDates(cardId);
   const { data: cards } = useCreditCards();
   const card = cards?.find((c) => c.id === cardId);
   const toggle = useToggleCreditCard(cardId);
@@ -307,7 +320,24 @@ export default function CreditCardDetailPage() {
               <p className="text-sm text-muted-foreground">
                 {MONTHS[data.period.month - 1]} {data.period.year}
               </p>
-              <StatementStatusBadge status={data.period.status} />
+              <div className="flex items-center gap-2">
+                <StatementStatusBadge status={data.period.status} />
+                {data.period.status === "OPEN" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Editar fechas del resumen"
+                    onClick={() => {
+                      setDraftClosing(data.period.closingDate.slice(0, 10));
+                      setDraftDue(data.period.dueDate.slice(0, 10));
+                      setEditDatesOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -368,6 +398,58 @@ export default function CreditCardDetailPage() {
           </Tabs>
         </>
       )}
+
+      {/* Editar fechas del resumen */}
+      <Dialog open={editDatesOpen} onOpenChange={setEditDatesOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar fechas del resumen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="closing-date">Fecha de cierre</Label>
+              <Input
+                id="closing-date"
+                type="date"
+                value={draftClosing}
+                onChange={(e) => setDraftClosing(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="due-date">Fecha de vencimiento</Label>
+              <Input
+                id="due-date"
+                type="date"
+                value={draftDue}
+                onChange={(e) => setDraftDue(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEditDatesOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={updateDates.isPending}
+                onClick={async () => {
+                  if (!data) return;
+                  try {
+                    await updateDates.mutateAsync({
+                      statementId: data.period.id,
+                      closingDate: draftClosing ? new Date(draftClosing + "T12:00:00").toISOString() : undefined,
+                      dueDate: draftDue ? new Date(draftDue + "T12:00:00").toISOString() : undefined,
+                    });
+                    setEditDatesOpen(false);
+                  } catch {
+                    // toast shown by hook
+                  }
+                }}
+              >
+                Guardar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Toggle confirmation dialog */}
       {card && (
