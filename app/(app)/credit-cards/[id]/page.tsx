@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
@@ -196,18 +196,19 @@ export default function CreditCardDetailPage() {
   const toggle = useToggleCreditCard(cardId);
 
   const { data: periods, isLoading: loadingPeriods } = useCardPeriods(cardId);
+
+  const activePeriod = useMemo(() => {
+    if (selectedPeriod) return selectedPeriod;
+    if (!periods || periods.length === 0) return null;
+    const current = findCurrentPeriod(periods);
+    return { year: current.year, month: current.month };
+  }, [selectedPeriod, periods]);
+
   const { data, isLoading: loadingDetail } = useCardPeriodDetail(
     cardId,
-    selectedPeriod?.year,
-    selectedPeriod?.month,
+    activePeriod?.year,
+    activePeriod?.month,
   );
-
-  useEffect(() => {
-    if (!selectedPeriod && periods && periods.length > 0) {
-      const current = findCurrentPeriod(periods);
-      setSelectedPeriod({ year: current.year, month: current.month });
-    }
-  }, [periods, selectedPeriod]);
 
   const isLoading = loadingPeriods || loadingDetail;
 
@@ -283,7 +284,7 @@ export default function CreditCardDetailPage() {
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">Resumen:</span>
           <Select
-            value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.month}` : ""}
+            value={activePeriod ? `${activePeriod.year}-${activePeriod.month}` : ""}
             onValueChange={(val) => {
               const [y, m] = val.split("-").map(Number);
               setSelectedPeriod({ year: y, month: m });
@@ -461,7 +462,7 @@ export default function CreditCardDetailPage() {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                ¿{card.isActive ? "Desactivar" : "Activar"} "{card.name}"?
+                ¿{card.isActive ? "Desactivar" : "Activar"} &ldquo;{card.name}&rdquo;?
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {card.isActive

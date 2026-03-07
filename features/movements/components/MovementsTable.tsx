@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
 import { formatCurrency } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/category-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
