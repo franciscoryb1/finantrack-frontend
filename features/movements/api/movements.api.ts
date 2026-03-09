@@ -8,8 +8,10 @@ export type Movement = {
   amountCents: number;
   description: string | null;
   occurredAt: string;
+  isRecurring?: boolean;
   account: { id: number; name: string; type: string };
   category: { id: number; name: string; type: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
+  recurringPayment?: { id: number } | null;
 };
 
 export type MovementsResponse = {

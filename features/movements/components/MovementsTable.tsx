@@ -28,7 +28,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, CreditCard, ArrowLeftRight } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, CreditCard, ArrowLeftRight, Repeat2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { EditMovementDialog } from "./EditMovementDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
@@ -153,9 +159,19 @@ export function MovementsTable({ items, loading }: Props) {
               <div className={cn("w-1 self-stretch rounded-full shrink-0", getBarColor(item.type as ItemType))} />
 
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm leading-snug truncate">
+                <p className="font-medium text-sm leading-snug truncate flex items-center gap-1.5">
                   {item.description ?? (
                     <span className="italic text-muted-foreground">Sin descripción</span>
+                  )}
+                  {item.isRecurring && (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Repeat2 className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Pago de gasto fijo</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 flex-wrap">
@@ -247,9 +263,19 @@ export function MovementsTable({ items, loading }: Props) {
 
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-medium">
+                    <span className="font-medium flex items-center gap-1.5">
                       {item.description ?? (
                         <span className="text-muted-foreground italic">Sin descripción</span>
+                      )}
+                      {item.isRecurring && (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Repeat2 className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Pago de gasto fijo</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </span>
                     {item.installmentInfo && (

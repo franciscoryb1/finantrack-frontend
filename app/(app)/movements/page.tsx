@@ -38,6 +38,7 @@ function toActivityItem(m: Movement): DashboardActivityItem {
     occurredAt: m.occurredAt,
     purchaseDate: null,
     registeredAt: m.occurredAt,
+    isRecurring: !!m.recurringPayment,
     account: m.account,
     creditCard: null,
     installmentInfo: null,
