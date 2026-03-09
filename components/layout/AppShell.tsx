@@ -28,6 +28,7 @@ import {
   LogOut,
   Menu,
   User,
+  RefreshCcw,
 } from "lucide-react";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -42,10 +43,11 @@ type NavItemDef = {
 // ── Navegación ────────────────────────────────────────────────────────────────
 
 const MAIN_NAV: NavItemDef[] = [
-  { href: "/",           label: "Inicio",       icon: LayoutDashboard, exact: true },
-  { href: "/movements",  label: "Movimientos",  icon: ArrowLeftRight },
-  { href: "/accounts",   label: "Cuentas",      icon: Landmark },
-  { href: "/categories", label: "Categorías",   icon: Tag },
+  { href: "/",                   label: "Inicio",              icon: LayoutDashboard, exact: true },
+  { href: "/movements",          label: "Movimientos",         icon: ArrowLeftRight },
+  { href: "/accounts",           label: "Cuentas",             icon: Landmark },
+  { href: "/recurring-expenses", label: "Gastos recurrentes",  icon: RefreshCcw },
+  { href: "/categories",         label: "Categorías",          icon: Tag },
 ];
 
 const CARDS_NAV: NavItemDef[] = [

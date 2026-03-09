@@ -16,6 +16,9 @@ import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSumm
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
 import { useInstallmentsOverview } from "@/features/installments/hooks/useInstallmentsOverview";
 import { CategorySpendCard } from "@/features/dashboard/components/CategorySpendCard";
+import { useRecurringExpenseOccurrences } from "@/features/recurring-expenses/hooks/useRecurringExpenseOccurrences";
+import { OccurrenceRow } from "@/features/recurring-expenses/components/OccurrenceRow";
+import Link from "next/link";
 
 const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -53,6 +56,7 @@ export default function DashboardPage() {
   const { data: summary, isLoading: loadingSummary } = useMovementsSummary({ fromDate, toDate });
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(year, month);
   const { data: installmentsOverview } = useInstallmentsOverview();
+  const { data: recurringOccurrences, isLoading: loadingRecurring } = useRecurringExpenseOccurrences(year, month);
 
   const TRACKED_CATEGORIES = ["Salidas", "Casa", "Transporte", "Supermercado"];
 
@@ -241,6 +245,65 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
+
+      {/* Gastos fijos */}
+      {(() => {
+        const occs = recurringOccurrences ?? [];
+        const overdue = occs.filter((o) => o.status === "OVERDUE");
+        const pending = occs.filter((o) => o.status === "PENDING");
+        const paid = occs.filter((o) => o.status === "PAID");
+        const pendingCount = overdue.length + pending.length;
+        const sorted = [...overdue, ...pending, ...paid];
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold">Gastos fijos</h2>
+                {!loadingRecurring && occs.length > 0 && (
+                  <span
+                    className={
+                      pendingCount > 0
+                        ? "text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    }
+                  >
+                    {pendingCount > 0 ? `${pendingCount} pendiente${pendingCount > 1 ? "s" : ""}` : "Todo al día"}
+                  </span>
+                )}
+              </div>
+              <Link href="/recurring-expenses" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Ver todos →
+              </Link>
+            </div>
+
+            <div className="rounded-lg border bg-card px-4">
+              {loadingRecurring ? (
+                <div className="space-y-3 py-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-10 rounded bg-muted animate-pulse" />
+                  ))}
+                </div>
+              ) : sorted.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-5">
+                  No hay gastos fijos configurados para este período.{" "}
+                  <Link href="/recurring-expenses" className="underline hover:no-underline">
+                    Configurar
+                  </Link>
+                </p>
+              ) : (
+                sorted.map((occ, i) => (
+                  <OccurrenceRow
+                    key={`${occ.recurringExpense.id}-${occ.dueDate}-${i}`}
+                    occurrence={occ}
+                    compact
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Actividad del período */}
       <div className="space-y-3">
