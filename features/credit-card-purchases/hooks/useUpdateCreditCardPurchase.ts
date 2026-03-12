@@ -1,0 +1,20 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateCreditCardPurchase, UpdateCreditCardPurchaseInput } from "../api/credit-card-purchases.api";
+import { toast } from "sonner";
+
+export function useUpdateCreditCardPurchase() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateCreditCardPurchaseInput }) =>
+      updateCreditCardPurchase(id, data),
+    onSuccess: () => {
+      toast.success("Compra actualizada");
+      queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["installments-overview"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
