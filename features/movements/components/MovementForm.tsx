@@ -26,6 +26,7 @@ import { movementSchema, MovementFormValues } from "../schemas/movement.schema";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { TagPicker } from "@/features/tags/components/TagPicker";
 
 type Props = {
   onSubmit: (values: MovementFormValues) => Promise<void>;
@@ -45,6 +46,7 @@ export function MovementForm({ onSubmit, defaultValues, initialParentCategoryId,
       categoryId: undefined,
       occurredAt: today,
       paymentMethod: "ACCOUNT",
+      tagIds: [],
       accountId: undefined,
       creditCardId: undefined,
       installmentsCount: 1,
@@ -241,7 +243,28 @@ export function MovementForm({ onSubmit, defaultValues, initialParentCategoryId,
           )}
         />
 
-        {/* 5. Medio de pago — solo para Gasto */}
+        {/* 5. Etiquetas */}
+        <FormField
+          control={form.control}
+          name="tagIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Etiquetas{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </FormLabel>
+              <FormControl>
+                <TagPicker
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 6. Medio de pago — solo para Gasto */}
         {selectedType === "EXPENSE" && (
           <FormField
             control={form.control}

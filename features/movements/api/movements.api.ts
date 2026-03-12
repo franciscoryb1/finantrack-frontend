@@ -2,6 +2,8 @@ import { apiFetch } from "@/lib/api";
 
 export type MovementType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
 
+export type MovementTag = { id: number; name: string; color: string | null };
+
 export type Movement = {
   id: number;
   type: MovementType;
@@ -12,6 +14,7 @@ export type Movement = {
   account: { id: number; name: string; type: string };
   category: { id: number; name: string; type: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   recurringPayment?: { id: number } | null;
+  tags: MovementTag[];
 };
 
 export type MovementsResponse = {
@@ -46,6 +49,7 @@ export type CreateMovementInput = {
   amountCents: number;
   occurredAt: string;
   description?: string;
+  tagIds?: number[];
 };
 
 export function getMovements(params: ListMovementsParams) {

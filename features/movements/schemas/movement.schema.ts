@@ -8,6 +8,7 @@ export const movementSchema = z
     categoryId: z.number().optional(),
     occurredAt: z.string().min(1, "Seleccionar una fecha"),
     paymentMethod: z.enum(["ACCOUNT", "CREDIT_CARD"]),
+    tagIds: z.array(z.number()).optional(),
     // Campos condicionales según paymentMethod
     accountId: z.number().optional(),
     creditCardId: z.number().optional(),

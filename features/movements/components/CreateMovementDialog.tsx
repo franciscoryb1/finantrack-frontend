@@ -49,6 +49,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           categoryId: values.categoryId,
           description: values.description || undefined,
           occurredAt,
+          tagIds: values.tagIds?.length ? values.tagIds : undefined,
         });
       }
       setOpen(false);
