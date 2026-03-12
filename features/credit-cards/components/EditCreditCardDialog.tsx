@@ -60,9 +60,12 @@ export function EditCreditCardDialog({ card }: Props) {
                 <CreditCardForm
                     defaultValues={{
                         name: card.name,
-                        limit: card.limitCents,
+                        brand: (card.brand as "VISA" | "MASTERCARD") ?? "VISA",
+                        limit: card.limitCents / 100,
                         cardLast4: card.cardLast4,
                         bankAccountId: card.bankAccount.id,
+                        expiryMonth: new Date(card.cardExpiresAt).getUTCMonth() + 1,
+                        expiryYear: new Date(card.cardExpiresAt).getUTCFullYear(),
                     }}
                     onSubmit={handleSubmit}
                     submitLabel="Guardar cambios"
