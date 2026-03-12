@@ -10,10 +10,21 @@ export type DashboardActivityItem = {
   amountCents: number;
   type: "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
   isRecurring: boolean;
+  tags: { id: number; name: string; color: string | null }[];
   category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   account: { id: number; name: string; type: string } | null;
   creditCard: { id: number; name: string; brand: string | null; cardLast4: string } | null;
-  installmentInfo: { installmentNumber: number; installmentsCount: number } | null;
+  installmentInfo: { installmentNumber: number; installmentsCount: number; purchaseId: number } | null;
+  transferData: {
+    id: number;
+    fromAccountId: number;
+    toAccountId: number;
+    amountCents: number;
+    description: string | null;
+    transferredAt: string;
+    fromAccount: { id: number; name: string };
+    toAccount: { id: number; name: string };
+  } | null;
 };
 
 export type DashboardActivityResponse = {
