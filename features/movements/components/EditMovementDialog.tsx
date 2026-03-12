@@ -38,6 +38,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
     occurredAt,
     paymentMethod: "ACCOUNT",
     accountId: item.account?.id,
+    tagIds: item.tags?.map((t) => t.id) ?? [],
   };
 
   async function handleSubmit(values: MovementFormValues) {
@@ -55,6 +56,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
           categoryId: values.categoryId,
           description: values.description || undefined,
           occurredAt,
+          tagIds: values.tagIds ?? [],
         },
       });
       onOpenChange(false);

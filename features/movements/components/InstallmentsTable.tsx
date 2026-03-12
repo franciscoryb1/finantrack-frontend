@@ -13,6 +13,7 @@ import {
   PaginationItem,
 } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/components/EditCreditCardPurchaseDialog";
 
 const PAGE_SIZE = 10;
 
@@ -45,6 +46,7 @@ function getPaginationRange(current: number, total: number): (number | "…")[] 
 
 export function InstallmentsTable({ items, loading }: Props) {
   const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState<DashboardActivityItem | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -80,7 +82,8 @@ export function InstallmentsTable({ items, loading }: Props) {
           {paginated.map((item) => (
             <div
               key={`${item.kind}-${item.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
+              onClick={() => setEditItem(item)}
             >
               <div className="w-1 self-stretch rounded-full shrink-0 bg-red-500" />
 
@@ -145,7 +148,8 @@ export function InstallmentsTable({ items, loading }: Props) {
             {paginated.map((item) => (
               <tr
                 key={`${item.kind}-${item.id}`}
-                className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                onClick={() => setEditItem(item)}
               >
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="font-medium">{formatDate(item.purchaseDate ?? item.occurredAt)}</div>
@@ -205,6 +209,15 @@ export function InstallmentsTable({ items, loading }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Diálogo editar compra ── */}
+      {editItem && (
+        <EditCreditCardPurchaseDialog
+          item={editItem}
+          open={!!editItem}
+          onOpenChange={(open) => { if (!open) setEditItem(null); }}
+        />
+      )}
 
       {/* ── Paginación ── */}
       {totalPages > 1 && (

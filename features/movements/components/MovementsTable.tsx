@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Pencil, Trash2, CreditCard, ArrowLeftRight, Repeat2 } from "lucide-react";
+import { TagBadge } from "@/features/tags/components/TagBadge";
 import {
   Tooltip,
   TooltipContent,
@@ -37,14 +38,20 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { EditMovementDialog } from "./EditMovementDialog";
+import { EditTransferDialog } from "@/features/account-transfers/components/EditTransferDialog";
+import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/components/EditCreditCardPurchaseDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
 
 const PAGE_SIZE = 10;
 
 type ItemType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
 
+function isTransfer(type: ItemType) {
+  return type === "TRANSFER_OUT" || type === "TRANSFER_IN";
+}
+
 function isSystemGenerated(type: ItemType) {
-  return type === "STATEMENT_PAYMENT" || type === "TRANSFER_OUT" || type === "TRANSFER_IN";
+  return type === "STATEMENT_PAYMENT";
 }
 
 function getAmountColor(type: ItemType) {
@@ -66,8 +73,6 @@ function getAmountPrefix(type: ItemType) {
 }
 
 function SystemIcon({ type }: { type: ItemType }) {
-  if (type === "TRANSFER_OUT" || type === "TRANSFER_IN")
-    return <ArrowLeftRight className="h-4 w-4 text-blue-400" />;
   if (type === "STATEMENT_PAYMENT")
     return <CreditCard className="h-4 w-4 text-blue-400" />;
   return null;
@@ -117,8 +122,24 @@ function ItemSource({ item }: { item: DashboardActivityItem }) {
 export function MovementsTable({ items, loading }: Props) {
   const [page, setPage] = useState(1);
   const [editItem, setEditItem] = useState<DashboardActivityItem | null>(null);
+  const [editTransferItem, setEditTransferItem] = useState<DashboardActivityItem | null>(null);
+  const [editPurchaseItem, setEditPurchaseItem] = useState<DashboardActivityItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<DashboardActivityItem | null>(null);
   const deleteMovement = useDeleteMovement();
+
+  function handleRowClick(item: DashboardActivityItem) {
+    if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.purchaseId) {
+      setEditPurchaseItem(item);
+      return;
+    }
+    if (item.kind !== "MOVEMENT") return;
+    const type = item.type as ItemType;
+    if (isTransfer(type) && item.transferData) {
+      setEditTransferItem(item);
+    } else if (!isSystemGenerated(type) && !isTransfer(type)) {
+      setEditItem(item);
+    }
+  }
 
   useEffect(() => {
     setPage(1);
@@ -151,10 +172,19 @@ export function MovementsTable({ items, loading }: Props) {
 
         {/* ── Vista mobile ── */}
         <div className="md:hidden divide-y">
-          {paginated.map((item) => (
+          {paginated.map((item) => {
+            const type = item.type as ItemType;
+            const isClickable =
+              (item.kind === "CREDIT_CARD_INSTALLMENT" && !!item.installmentInfo?.purchaseId) ||
+              (item.kind === "MOVEMENT" && (
+                (!isSystemGenerated(type) && !isTransfer(type)) ||
+                (isTransfer(type) && !!item.transferData)
+              ));
+            return (
             <div
               key={`${item.kind}-${item.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+              className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors", isClickable && "cursor-pointer")}
+              onClick={() => isClickable && handleRowClick(item)}
             >
               <div className={cn("w-1 self-stretch rounded-full shrink-0", getBarColor(item.type as ItemType))} />
 
@@ -188,6 +218,9 @@ export function MovementsTable({ items, loading }: Props) {
                       <CategoryBadge category={item.category} className="text-[10px] h-4 px-1.5" />
                     </>
                   )}
+                  {item.tags?.map((tag) => (
+                    <TagBadge key={tag.id} tag={tag} />
+                  ))}
                 </div>
               </div>
 
@@ -204,27 +237,46 @@ export function MovementsTable({ items, loading }: Props) {
                   </p>
                 </div>
 
-                {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditItem(item)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setDeleteItem(item)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                {item.kind === "MOVEMENT" && isTransfer(item.type as ItemType) && item.transferData && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditTransferItem(item)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+                {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && !isTransfer(item.type as ItemType) && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditItem(item)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteItem(item)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )}
                 {item.kind === "MOVEMENT" && isSystemGenerated(item.type as ItemType) && (
                   <div className="h-7 w-7 shrink-0 flex items-center justify-center">
@@ -233,7 +285,8 @@ export function MovementsTable({ items, loading }: Props) {
                 )}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* ── Vista desktop ── */}
@@ -249,10 +302,19 @@ export function MovementsTable({ items, loading }: Props) {
             </tr>
           </thead>
           <tbody>
-            {paginated.map((item) => (
+            {paginated.map((item) => {
+              const type = item.type as ItemType;
+              const isClickable =
+                (item.kind === "CREDIT_CARD_INSTALLMENT" && !!item.installmentInfo?.purchaseId) ||
+                (item.kind === "MOVEMENT" && (
+                  (!isSystemGenerated(type) && !isTransfer(type)) ||
+                  (isTransfer(type) && !!item.transferData)
+                ));
+              return (
               <tr
                 key={`${item.kind}-${item.id}`}
-                className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                className={cn("border-b last:border-0 hover:bg-muted/30 transition-colors", isClickable && "cursor-pointer")}
+                onClick={() => isClickable && handleRowClick(item)}
               >
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="font-medium">{formatDate(item.purchaseDate ?? item.occurredAt)}</div>
@@ -283,6 +345,13 @@ export function MovementsTable({ items, loading }: Props) {
                         Cuota {item.installmentInfo.installmentNumber}/{item.installmentInfo.installmentsCount}
                       </span>
                     )}
+                    {item.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {item.tags.map((tag) => (
+                          <TagBadge key={tag.id} tag={tag} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </td>
 
@@ -302,8 +371,23 @@ export function MovementsTable({ items, loading }: Props) {
                   {getAmountPrefix(item.type as ItemType)}{formatCurrency(item.amountCents)}
                 </td>
 
-                <td className="px-2 py-3">
-                  {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && (
+                <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
+                  {item.kind === "MOVEMENT" && isTransfer(item.type as ItemType) && item.transferData && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditTransferItem(item)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && !isTransfer(item.type as ItemType) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -332,17 +416,36 @@ export function MovementsTable({ items, loading }: Props) {
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* ── Diálogo editar ── */}
+      {/* ── Diálogo editar movimiento ── */}
       {editItem && (
         <EditMovementDialog
           item={editItem}
           open={!!editItem}
           onOpenChange={(open) => { if (!open) setEditItem(null); }}
+        />
+      )}
+
+      {/* ── Diálogo editar transferencia ── */}
+      {editTransferItem && (
+        <EditTransferDialog
+          item={editTransferItem}
+          open={!!editTransferItem}
+          onOpenChange={(open) => { if (!open) setEditTransferItem(null); }}
+        />
+      )}
+
+      {/* ── Diálogo editar compra en cuotas ── */}
+      {editPurchaseItem && (
+        <EditCreditCardPurchaseDialog
+          item={editPurchaseItem}
+          open={!!editPurchaseItem}
+          onOpenChange={(open) => { if (!open) setEditPurchaseItem(null); }}
         />
       )}
 

@@ -39,9 +39,11 @@ function toActivityItem(m: Movement): DashboardActivityItem {
     purchaseDate: null,
     registeredAt: m.occurredAt,
     isRecurring: !!m.recurringPayment,
+    tags: m.tags ?? [],
     account: m.account,
     creditCard: null,
     installmentInfo: null,
+    transferData: null,
     category: m.category
       ? { id: m.category.id, name: m.category.name, color: m.category.color, parent: m.category.parent ?? null }
       : null,
