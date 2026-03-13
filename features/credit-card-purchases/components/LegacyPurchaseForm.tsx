@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -129,15 +130,9 @@ export function LegacyPurchaseForm({ onSubmit }: Props) {
               <FormItem>
                 <FormLabel>Monto total ($)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    placeholder="0.00"
-                    value={field.value ?? ""}
-                    onChange={(e) =>
-                      field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                    }
+                  <CurrencyInput
+                    value={field.value}
+                    onChange={(val) => field.onChange(val)}
                   />
                 </FormControl>
                 <FormMessage />

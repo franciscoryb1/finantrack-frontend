@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,8 +36,8 @@ type Step = "form" | "confirm-update";
 export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("form");
-  const [amount, setAmount] = useState<string>(
-    (occurrence.recurringExpense.amountCents / 100).toFixed(2)
+  const [amount, setAmount] = useState<number | undefined>(
+    occurrence.recurringExpense.amountCents / 100
   );
   const [occurredAt, setOccurredAt] = useState<string>(
     new Date().toISOString().split("T")[0]
@@ -62,8 +63,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
   // Validación del formulario antes de confirmar
   function handleFormSubmit() {
     setServerError(null);
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
+    if (!amount || amount <= 0) {
       setServerError("El monto debe ser mayor a 0");
       return;
     }
@@ -72,7 +72,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
       return;
     }
 
-    const amountCents = Math.round(amountNum * 100);
+    const amountCents = Math.round(amount * 100);
     // Si el monto difiere del estimado, preguntar
     if (amountCents !== estimatedCents) {
       setStep("confirm-update");
@@ -83,7 +83,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
 
   async function submitPayment(updateEstimated: boolean) {
     setServerError(null);
-    const amountCents = Math.round(parseFloat(amount) * 100);
+    const amountCents = Math.round((amount ?? 0) * 100);
     const [y, m, d] = occurredAt.split("-").map(Number);
     const occurredAtIso = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
@@ -148,13 +148,10 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="pay-amount">Monto real ($)</Label>
-              <Input
+              <CurrencyInput
                 id="pay-amount"
-                type="number"
-                min={0}
-                step={0.01}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
               />
             </div>
 
@@ -208,7 +205,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
               <p className="text-sm text-amber-700 dark:text-amber-400">
                 Ingresaste{" "}
                 <span className="font-semibold">
-                  {formatCurrency(Math.round(parseFloat(amount) * 100))}
+                  {formatCurrency(Math.round((amount ?? 0) * 100))}
                 </span>{" "}
                 pero el estimado es{" "}
                 <span className="font-semibold">{formatCurrency(estimatedCents)}</span>.

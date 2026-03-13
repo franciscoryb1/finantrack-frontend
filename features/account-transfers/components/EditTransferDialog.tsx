@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -27,11 +28,11 @@ export function EditTransferDialog({ item, open, onOpenChange }: Props) {
   const updateTransfer = useUpdateTransfer();
 
   const initialDate = transfer.transferredAt.slice(0, 10);
-  const initialAmount = String(transfer.amountCents / 100);
+  const initialAmount = transfer.amountCents / 100;
   const initialDescription = transfer.description ?? "";
   const initialTagIds = item.tags?.map((t) => t.id) ?? [];
 
-  const [amount, setAmount] = useState(initialAmount);
+  const [amount, setAmount] = useState<number | undefined>(initialAmount);
   const [date, setDate] = useState(initialDate);
   const [description, setDescription] = useState(initialDescription);
   const [tagIds, setTagIds] = useState<number[]>(initialTagIds);
@@ -43,7 +44,7 @@ export function EditTransferDialog({ item, open, onOpenChange }: Props) {
     setTagIds(initialTagIds);
   }
 
-  const amountCents = Math.round(parseFloat(amount || "0") * 100);
+  const amountCents = Math.round((amount ?? 0) * 100);
   const isValid = amountCents > 0 && date;
 
   async function handleSubmit() {
@@ -85,13 +86,10 @@ export function EditTransferDialog({ item, open, onOpenChange }: Props) {
           {/* Monto */}
           <div className="space-y-1.5">
             <Label htmlFor="edit-transfer-amount">Monto</Label>
-            <Input
+            <CurrencyInput
               id="edit-transfer-amount"
-              type="number"
-              min="0"
-              step="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
             />
             <p className="text-xs text-muted-foreground">
               Monto actual: {formatCurrency(transfer.amountCents)}

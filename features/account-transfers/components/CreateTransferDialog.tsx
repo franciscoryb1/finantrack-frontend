@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -33,7 +34,7 @@ export function CreateTransferDialog({ trigger }: Props) {
 
   const [fromAccountId, setFromAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState<number | undefined>(undefined);
   const [transferredAt, setTransferredAt] = useState(today);
   const [description, setDescription] = useState("");
 
@@ -48,14 +49,14 @@ export function CreateTransferDialog({ trigger }: Props) {
   const toAccount = payableAccounts.find((a) => a.id === Number(toAccountId));
   const toOptions = payableAccounts.filter((a) => a.id !== Number(fromAccountId));
 
-  const amountCents = Math.round(parseFloat(amount || "0") * 100);
+  const amountCents = Math.round((amount ?? 0) * 100);
   const hasEnoughBalance = !fromAccount || fromAccount.currentBalanceCents >= amountCents;
   const isValid = fromAccountId && toAccountId && amountCents > 0 && hasEnoughBalance;
 
   function reset() {
     setFromAccountId("");
     setToAccountId("");
-    setAmount("");
+    setAmount(undefined);
     setTransferredAt(today);
     setDescription("");
   }
@@ -158,14 +159,10 @@ export function CreateTransferDialog({ trigger }: Props) {
           {/* Monto */}
           <div className="space-y-1.5">
             <Label htmlFor="transfer-amount">Monto</Label>
-            <Input
+            <CurrencyInput
               id="transfer-amount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
             />
           </div>
 

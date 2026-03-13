@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -157,18 +158,9 @@ export function CreditCardForm({
             <FormItem>
               <FormLabel>Límite ($)</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step={0.01}
-                  placeholder="0.00"
-                  value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value === "" ? 0 : Number(e.target.value)
-                    )
-                  }
+                <CurrencyInput
+                  value={field.value}
+                  onChange={(val) => field.onChange(val ?? 0)}
                 />
               </FormControl>
               <FormMessage />
