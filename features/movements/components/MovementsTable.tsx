@@ -212,6 +212,11 @@ export function MovementsTable({ items, loading }: Props) {
                       <span>Cuota {item.installmentInfo.installmentNumber}/{item.installmentInfo.installmentsCount}</span>
                     </>
                   )}
+                  {item.installmentInfo?.reimbursementAmountCents && (
+                    <span className="text-green-600 dark:text-green-400 font-medium">
+                      · Reintegro +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
+                    </span>
+                  )}
                   {item.category && (
                     <>
                       <span>·</span>
@@ -343,6 +348,11 @@ export function MovementsTable({ items, loading }: Props) {
                     {item.installmentInfo && (
                       <span className="text-xs text-muted-foreground">
                         Cuota {item.installmentInfo.installmentNumber}/{item.installmentInfo.installmentsCount}
+                        {item.installmentInfo.reimbursementAmountCents && (
+                          <span className="ml-1 text-green-600 dark:text-green-400 font-medium">
+                            · Reintegro +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
+                          </span>
+                        )}
                       </span>
                     )}
                     {item.tags?.length > 0 && (

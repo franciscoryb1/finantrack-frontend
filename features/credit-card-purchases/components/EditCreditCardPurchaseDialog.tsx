@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -28,9 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useUpdateCreditCardPurchase } from "../hooks/useUpdateCreditCardPurchase";
 import { useDeleteCreditCardPurchase } from "../hooks/useDeleteCreditCardPurchase";
 import { useReassignCreditCardPurchase } from "../hooks/useReassignCreditCardPurchase";
@@ -54,14 +57,31 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   const initialCategoryId = item.category?.id;
   const initialCreditCardId = item.creditCard?.id;
 
+  // Reintegro inicial desde installmentInfo
+  const initialReimbursementEnabled = !!(item.installmentInfo?.reimbursementAmountCents);
+  const initialReimbursementAmount = item.installmentInfo?.reimbursementAmountCents
+    ? item.installmentInfo.reimbursementAmountCents / 100
+    : undefined;
+  const initialReimbursementAccountId = item.installmentInfo?.reimbursementAccountId ?? undefined;
+  const today = new Date().toISOString().split("T")[0];
+  const initialReimbursementAt = item.installmentInfo?.reimbursementAt?.slice(0, 10) ?? today;
+
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId);
   const [description, setDescription] = useState(item.description ?? "");
   const [creditCardId, setCreditCardId] = useState<number | undefined>(initialCreditCardId);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Reintegro
+  const [reimbursementEnabled, setReimbursementEnabled] = useState(initialReimbursementEnabled);
+  const [reimbursementAmount, setReimbursementAmount] = useState<number | undefined>(initialReimbursementAmount);
+  const [reimbursementAccountId, setReimbursementAccountId] = useState<number | undefined>(initialReimbursementAccountId);
+  const [reimbursementAt, setReimbursementAt] = useState(initialReimbursementAt);
+
   const { data: categories } = useCategories("EXPENSE");
   const { data: creditCards } = useCreditCards();
+  const { data: allAccounts } = useAccounts();
+  const accounts = (allAccounts ?? []).filter((a) => a.type !== "CREDIT_CARD" && a.isActive);
 
   const selectedParent = categories?.find((c) => c.id === parentCategoryId);
   const subCategories = selectedParent?.children ?? [];
@@ -76,23 +96,63 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
     setDescription(item.description ?? "");
     setCreditCardId(initialCreditCardId);
     setServerError(null);
+    setReimbursementEnabled(initialReimbursementEnabled);
+    setReimbursementAmount(initialReimbursementAmount);
+    setReimbursementAccountId(initialReimbursementAccountId);
+    setReimbursementAt(initialReimbursementAt);
   }
 
   async function handleSubmit() {
     setServerError(null);
+
+    // Calcular payload de reintegro
+    let reimbursementPayload: {
+      reimbursementAmountCents?: number | null;
+      reimbursementAccountId?: number | null;
+      reimbursementAt?: string | null;
+    } = {};
+
+    if (!reimbursementEnabled && initialReimbursementEnabled) {
+      // Se eliminó el reintegro
+      reimbursementPayload = {
+        reimbursementAmountCents: null,
+        reimbursementAccountId: null,
+        reimbursementAt: null,
+      };
+    } else if (reimbursementEnabled) {
+      const amountChanged = reimbursementAmount !== initialReimbursementAmount;
+      const accountChanged = reimbursementAccountId !== initialReimbursementAccountId;
+      const dateChanged = reimbursementAt !== initialReimbursementAt;
+
+      if (amountChanged || accountChanged || dateChanged || !initialReimbursementEnabled) {
+        if (!reimbursementAmount || !reimbursementAccountId) {
+          setServerError("Completá el monto y la cuenta del reintegro");
+          return;
+        }
+        const reimbAt = reimbursementAt
+          ? (() => { const [ry, rm, rd] = reimbursementAt.split("-").map(Number); return new Date(ry, rm - 1, rd, 12, 0, 0).toISOString(); })()
+          : undefined;
+        reimbursementPayload = {
+          reimbursementAmountCents: Math.round(reimbursementAmount * 100),
+          reimbursementAccountId,
+          reimbursementAt: reimbAt ?? null,
+        };
+      }
+    }
+
     try {
       if (cardChanged) {
         await reassign.mutateAsync({
           id: purchaseId,
           data: { creditCardId: creditCardId! },
         });
-        // update category/description separately if also changed
-        if (categoryId !== initialCategoryId || description.trim() !== (item.description ?? "")) {
+        if (categoryId !== initialCategoryId || description.trim() !== (item.description ?? "") || Object.keys(reimbursementPayload).length > 0) {
           await update.mutateAsync({
             id: purchaseId,
             data: {
               categoryId: categoryId ?? null,
               description: description.trim() || null,
+              ...reimbursementPayload,
             },
           });
         }
@@ -102,6 +162,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
           data: {
             categoryId: categoryId ?? null,
             description: description.trim() || null,
+            ...reimbursementPayload,
           },
         });
       }
@@ -113,100 +174,89 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none",
+        reimbursementEnabled ? "sm:max-w-2xl" : "sm:max-w-sm"
+      )}>
         <DialogHeader>
           <DialogTitle>Editar compra</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 pt-1">
-          {/* Info de la compra (read-only) */}
-          <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm space-y-0.5">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total</span>
-              <span className="font-medium tabular-nums">
-                {formatCurrency(item.amountCents * item.installmentInfo!.installmentsCount)}
-              </span>
+        <div className={cn("pt-1", reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
+          {/* Columna izquierda: campos principales */}
+          <div className={cn("space-y-4", reimbursementEnabled && "sm:flex-1")}>
+            {/* Info de la compra (read-only) */}
+            <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm space-y-0.5">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total</span>
+                <span className="font-medium tabular-nums">
+                  {formatCurrency(item.amountCents * item.installmentInfo!.installmentsCount)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cuotas</span>
+                <span className="font-medium">{item.installmentInfo!.installmentsCount}</span>
+              </div>
+              {item.installmentInfo?.reimbursementAmountCents && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Reintegro</span>
+                  <span className="font-medium text-green-600 tabular-nums">
+                    +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Cuotas</span>
-              <span className="font-medium">{item.installmentInfo!.installmentsCount}</span>
-            </div>
-          </div>
 
-          {serverError && (
-            <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
-              {serverError}
-            </p>
-          )}
-
-          {/* Tarjeta */}
-          <div className="space-y-1.5">
-            <Label>Tarjeta</Label>
-            <Select
-              value={creditCardId?.toString() ?? ""}
-              onValueChange={(val) => setCreditCardId(Number(val))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleccionar tarjeta" />
-              </SelectTrigger>
-              <SelectContent>
-                {creditCards?.filter((c) => c.isActive || c.id === initialCreditCardId).map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.name} ···· {c.cardLast4}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {cardChanged && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Se reasignarán todas las cuotas pendientes a la nueva tarjeta.
+            {serverError && (
+              <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+                {serverError}
               </p>
             )}
-          </div>
 
-          {/* Categoría */}
-          <div className="space-y-1.5">
-            <Label>
-              Categoría{" "}
-              <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-            </Label>
-            <Select
-              value={parentCategoryId?.toString() ?? ""}
-              onValueChange={(val) => {
-                const id = Number(val);
-                setParentCategoryId(id);
-                setCategoryId(id);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sin categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories?.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Tarjeta */}
+            <div className="space-y-1.5">
+              <Label>Tarjeta</Label>
+              <Select
+                value={creditCardId?.toString() ?? ""}
+                onValueChange={(val) => setCreditCardId(Number(val))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar tarjeta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {creditCards?.filter((c) => c.isActive || c.id === initialCreditCardId).map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name} ···· {c.cardLast4}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {cardChanged && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Se reasignarán todas las cuotas pendientes a la nueva tarjeta.
+                </p>
+              )}
+            </div>
 
-          {/* Subcategoría */}
-          {subCategories.length > 0 && (
+            {/* Categoría */}
             <div className="space-y-1.5">
               <Label>
-                Subcategoría{" "}
+                Categoría{" "}
                 <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
               </Label>
               <Select
-                value={isSubSelected ? categoryId?.toString() ?? "" : ""}
-                onValueChange={(val) => setCategoryId(Number(val))}
+                value={parentCategoryId?.toString() ?? ""}
+                onValueChange={(val) => {
+                  const id = Number(val);
+                  setParentCategoryId(id);
+                  setCategoryId(id);
+                }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sin subcategoría" />
+                  <SelectValue placeholder="Sin categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  {subCategories.map((c) => (
+                  {categories?.map((c) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
                       {c.name}
                     </SelectItem>
@@ -214,23 +264,153 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          {/* Descripción */}
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-purchase-desc">
-              Descripción{" "}
-              <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-            </Label>
-            <Input
-              id="edit-purchase-desc"
-              placeholder="Ej: Netflix, Ropa..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            {/* Subcategoría */}
+            {subCategories.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>
+                  Subcategoría{" "}
+                  <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+                </Label>
+                <Select
+                  value={isSubSelected ? categoryId?.toString() ?? "" : ""}
+                  onValueChange={(val) => setCategoryId(Number(val))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sin subcategoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Descripción */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-purchase-desc">
+                Descripción{" "}
+                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+              </Label>
+              <Input
+                id="edit-purchase-desc"
+                placeholder="Ej: Netflix, Ropa..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Toggle reintegro (siempre visible en columna izquierda) */}
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Reintegro</p>
+                  <p className="text-xs text-muted-foreground">Cashback o promoción bancaria</p>
+                </div>
+                <Switch
+                  checked={reimbursementEnabled}
+                  onCheckedChange={(checked) => {
+                    setReimbursementEnabled(checked);
+                    if (!checked) {
+                      setReimbursementAmount(undefined);
+                      setReimbursementAccountId(undefined);
+                      setReimbursementAt(today);
+                    } else if (!reimbursementAt) {
+                      setReimbursementAt(today);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Campos de reintegro en mobile (inline bajo el toggle) */}
+              {reimbursementEnabled && (
+                <div className="sm:hidden mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Monto ($)</Label>
+                      <CurrencyInput
+                        value={reimbursementAmount}
+                        onChange={setReimbursementAmount}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Fecha</Label>
+                      <Input
+                        type="date"
+                        value={reimbursementAt}
+                        onChange={(e) => setReimbursementAt(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Cuenta de acreditación</Label>
+                    <Select
+                      value={reimbursementAccountId?.toString() ?? ""}
+                      onValueChange={(val) => setReimbursementAccountId(Number(val))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="¿En qué cuenta?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id.toString()}>
+                            {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-between gap-2 pt-1">
+          {/* Columna derecha: panel de reintegro (solo desktop) */}
+          {reimbursementEnabled && (
+            <div className="hidden sm:flex sm:flex-col sm:gap-3 sm:w-56 sm:border-l sm:pl-6 sm:pt-0">
+              <p className="text-sm font-medium">Datos del reintegro</p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Monto ($)</Label>
+                <CurrencyInput
+                  value={reimbursementAmount}
+                  onChange={setReimbursementAmount}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Fecha de acreditación</Label>
+                <Input
+                  type="date"
+                  value={reimbursementAt}
+                  onChange={(e) => setReimbursementAt(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cuenta de acreditación</Label>
+                <Select
+                  value={reimbursementAccountId?.toString() ?? ""}
+                  onValueChange={(val) => setReimbursementAccountId(Number(val))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="¿En qué cuenta?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id.toString()}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between gap-2 pt-3 mt-1">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={anyPending}>
@@ -268,8 +448,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
               </Button>
             </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
     </Dialog>
   );
 }

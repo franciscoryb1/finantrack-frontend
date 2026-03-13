@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { MovementForm } from "./MovementForm";
 import { useCreateMovement } from "../hooks/useCreateMovement";
 import { useCreateCreditCardPurchase } from "@/features/credit-card-purchases/hooks/useCreateCreditCardPurchase";
@@ -23,6 +24,7 @@ type Props = {
 export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento" }: Props) {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [reimbursementOpen, setReimbursementOpen] = useState(false);
   const createMovement = useCreateMovement();
   const createPurchase = useCreateCreditCardPurchase();
 
@@ -33,6 +35,11 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
 
     try {
       if (values.paymentMethod === "CREDIT_CARD") {
+        let reimbursementAt: string | undefined;
+        if (values.reimbursementEnabled && values.reimbursementAt) {
+          const [ry, rm, rd] = values.reimbursementAt.split("-").map(Number);
+          reimbursementAt = new Date(ry, rm - 1, rd, 12, 0, 0).toISOString();
+        }
         await createPurchase.mutateAsync({
           creditCardId: values.creditCardId!,
           totalAmountCents: Math.round(values.amount * 100),
@@ -40,6 +47,11 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           categoryId: values.categoryId,
           description: values.description || undefined,
           occurredAt,
+          ...(values.reimbursementEnabled && values.reimbursementAmount && values.reimbursementAccountId && {
+            reimbursementAmountCents: Math.round(values.reimbursementAmount * 100),
+            reimbursementAccountId: values.reimbursementAccountId,
+            reimbursementAt,
+          }),
         });
       } else {
         await createMovement.mutateAsync({
@@ -59,7 +71,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setServerError(null); setReimbursementOpen(false); } setOpen(o); }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
@@ -67,7 +79,10 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none",
+        reimbursementOpen ? "sm:max-w-2xl" : "sm:max-w-lg"
+      )}>
         <DialogHeader>
           <DialogTitle>Nuevo movimiento</DialogTitle>
         </DialogHeader>
@@ -78,7 +93,11 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           </p>
         )}
 
-        <MovementForm onSubmit={handleSubmit} defaultValues={initialValues} />
+        <MovementForm
+          onSubmit={handleSubmit}
+          defaultValues={initialValues}
+          onReimbursementChange={setReimbursementOpen}
+        />
       </DialogContent>
     </Dialog>
   );

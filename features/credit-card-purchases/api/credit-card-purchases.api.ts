@@ -7,6 +7,9 @@ export type CreateCreditCardPurchaseInput = {
   installmentsCount: number;
   occurredAt: string;
   description?: string;
+  reimbursementAmountCents?: number;
+  reimbursementAccountId?: number;
+  reimbursementAt?: string;
 };
 
 export function createCreditCardPurchase(data: CreateCreditCardPurchaseInput) {
@@ -31,6 +34,9 @@ export type ImportLegacyPurchaseInput = {
 export type UpdateCreditCardPurchaseInput = {
   categoryId?: number | null;
   description?: string | null;
+  reimbursementAmountCents?: number | null;
+  reimbursementAccountId?: number | null;
+  reimbursementAt?: string | null;
 };
 
 export function deleteCreditCardPurchase(id: number) {

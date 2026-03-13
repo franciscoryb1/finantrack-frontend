@@ -13,6 +13,11 @@ export const movementSchema = z
     accountId: z.number().optional(),
     creditCardId: z.number().optional(),
     installmentsCount: z.number().int().min(1).optional(),
+    // Reintegro (solo aplica para CREDIT_CARD)
+    reimbursementEnabled: z.boolean().optional(),
+    reimbursementAmount: z.number().positive().optional(),
+    reimbursementAccountId: z.number().optional(),
+    reimbursementAt: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === "ACCOUNT") {
@@ -39,6 +44,22 @@ export const movementSchema = z
           message: "Ingresá la cantidad de cuotas",
           path: ["installmentsCount"],
         });
+      }
+      if (data.reimbursementEnabled) {
+        if (!data.reimbursementAmount || data.reimbursementAmount <= 0) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Ingresá el monto del reintegro",
+            path: ["reimbursementAmount"],
+          });
+        }
+        if (!data.reimbursementAccountId) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Seleccionar una cuenta de acreditación",
+            path: ["reimbursementAccountId"],
+          });
+        }
       }
     }
   });
