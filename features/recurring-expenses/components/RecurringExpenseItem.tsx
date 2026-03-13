@@ -92,19 +92,30 @@ function getNextDueLabel(expense: RecurringExpense): string | null {
   const now = new Date();
   const start = new Date(expense.startDate);
 
-  if (start > now) {
-    return `Próximo vencimiento: ${start.toLocaleDateString("es-AR")}`;
-  }
+  let current: Date;
 
-  // Calculate next occurrence after today
-  let current = new Date(start);
-  while (current <= now) {
-    if (expense.frequency === "WEEKLY") {
-      current = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000);
-    } else if (expense.frequency === "BIWEEKLY") {
-      current = new Date(current.getTime() + 14 * 24 * 60 * 60 * 1000);
+  if (expense.frequency === "MONTHLY" && expense.dueDay) {
+    // Find next occurrence using dueDay, on or after startDate and after today
+    const base = start > now ? start : now;
+    const candidate = new Date(base.getFullYear(), base.getMonth(), expense.dueDay, 12, 0, 0);
+    if (candidate < start || candidate <= now) {
+      current = new Date(base.getFullYear(), base.getMonth() + 1, expense.dueDay, 12, 0, 0);
     } else {
-      current.setMonth(current.getMonth() + 1);
+      current = candidate;
+    }
+  } else if (start > now) {
+    current = start;
+  } else {
+    // Iterate from startDate until past today
+    current = new Date(start);
+    while (current <= now) {
+      if (expense.frequency === "WEEKLY") {
+        current = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000);
+      } else if (expense.frequency === "BIWEEKLY") {
+        current = new Date(current.getTime() + 14 * 24 * 60 * 60 * 1000);
+      } else {
+        current.setMonth(current.getMonth() + 1);
+      }
     }
   }
 
