@@ -12,6 +12,7 @@ export function useDeleteMovement() {
       queryClient.invalidateQueries({ queryKey: ["movements"] });
       queryClient.invalidateQueries({ queryKey: ["movements-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
     onError: (error: Error) => {
       toast.error(error.message);

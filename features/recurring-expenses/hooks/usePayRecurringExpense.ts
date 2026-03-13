@@ -12,6 +12,7 @@ export function usePayRecurringExpense() {
       queryClient.invalidateQueries({ queryKey: ["movements"] });
       queryClient.invalidateQueries({ queryKey: ["movements-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
 }
