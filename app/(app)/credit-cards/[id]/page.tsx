@@ -12,7 +12,9 @@ import { useCloseStatement } from "@/features/credit-cards/hooks/useCloseStateme
 import { PayStatementDialog } from "@/features/credit-cards/components/PayStatementDialog";
 import { CreditCardVisual } from "@/features/credit-cards/components/CreditCardVisual";
 import { CardPeriodItem } from "@/features/installments/api/getCardPeriods";
+import type { CardPeriodDetail } from "@/features/installments/api/getCardPeriodDetail";
 import { EditCreditCardDialog } from "@/features/credit-cards/components/EditCreditCardDialog";
+import { DeleteCreditCardDialog } from "@/features/credit-cards/components/DeleteCreditCardDialog";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,9 +85,9 @@ function findCurrentPeriod(periods: CardPeriodItem[]): CardPeriodItem {
 
 function StatementStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    OPEN:   { label: "Abierto",  className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
-    CLOSED: { label: "Cerrado",  className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
-    PAID:   { label: "Pagado",   className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
+    OPEN: { label: "Abierto", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
+    CLOSED: { label: "Cerrado", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
+    PAID: { label: "Pagado", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
   };
   const cfg = config[status] ?? { label: status, className: "" };
   return <Badge className={cn("text-[11px] font-medium px-2 h-5", cfg.className)}>{cfg.label}</Badge>;
@@ -94,8 +96,8 @@ function StatementStatusBadge({ status }: { status: string }) {
 function InstallmentStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
     PENDING: { label: "Pendiente", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0" },
-    BILLED:  { label: "Facturada", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
-    PAID:    { label: "Pagada",    className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
+    BILLED: { label: "Facturada", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0" },
+    PAID: { label: "Pagada", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0" },
   };
   const cfg = config[status] ?? { label: status, className: "" };
   return <Badge className={cn("text-[11px] font-medium px-2 h-5", cfg.className)}>{cfg.label}</Badge>;
@@ -172,6 +174,94 @@ function EmptyTab({ message }: { message: string }) {
   );
 }
 
+// ── Statement card ────────────────────────────────────────────────────────────
+
+type StatementCardProps = {
+  data: CardPeriodDetail;
+  totalToPay: number;
+  installments: Purchase[];
+  consumptions: Purchase[];
+  onEditDates: () => void;
+  onClose: () => void;
+  onPay: () => void;
+};
+
+function StatementCard({ data, totalToPay, consumptions, installments, onEditDates, onClose, onPay }: StatementCardProps) {
+  const { period } = data;
+  const isPaid = period.status === "PAID";
+  const isClosed = period.status === "CLOSED" || isPaid;
+
+  return (
+    <div className="h-full min-h-[180px] rounded-2xl border bg-card p-5 flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-base">
+            {MONTHS[period.month - 1]} {period.year}
+          </p>
+          <StatementStatusBadge status={period.status} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {!isClosed && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={onEditDates}>
+              <Pencil className="h-3 w-3" />
+              Fechas
+            </Button>
+          )}
+          {!isClosed && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={onClose}>
+              <Lock className="h-3 w-3" />
+              Cerrar
+            </Button>
+          )}
+          {!isPaid && (
+            <Button size="sm" className="h-7 text-xs" onClick={onPay}>
+              Pagar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Total */}
+      <div>
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Total a pagar</p>
+        <p className="text-3xl font-bold tabular-nums">{formatCurrency(totalToPay)}</p>
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Cierre</p>
+          <p className="font-medium">{formatDate(period.closingDate)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Vencimiento</p>
+          <p className="font-medium">{formatDate(period.dueDate)}</p>
+        </div>
+      </div>
+
+      {/* Counts */}
+      <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t">
+        {consumptions.length > 0 && (
+          <span className="flex items-center gap-1">
+            <ShoppingBag className="h-3 w-3" />
+            {consumptions.length} consumo{consumptions.length !== 1 ? "s" : ""}
+          </span>
+        )}
+        {installments.length > 0 && (
+          <span className="flex items-center gap-1">
+            <CreditCard className="h-3 w-3" />
+            {installments.length} cuota{installments.length !== 1 ? "s" : ""}
+          </span>
+        )}
+        {consumptions.length === 0 && installments.length === 0 && (
+          <span>Sin compras en este resumen</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function CreditCardDetailPage() {
@@ -220,7 +310,7 @@ export default function CreditCardDetailPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Back */}
       <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
         <Link href="/credit-cards">
@@ -229,198 +319,140 @@ export default function CreditCardDetailPage() {
         </Link>
       </Button>
 
-      {/* ── Card visual + actions ── */}
-      <div className="space-y-4">
-        {card ? (
-          <CreditCardVisual
-            card={card}
-            backgroundColor={data?.card.backgroundColor ?? null}
-          />
-        ) : (
-          <Skeleton className="w-full rounded-2xl" style={{ aspectRatio: "1.586" }} />
-        )}
+      {/* ── Hero: card visual (izq) + selector + resumen (der) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-4 md:gap-6 md:items-stretch">
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 justify-end">
-          <CreateMovementDialog
-            label="Nueva compra"
-            initialValues={{
-              type: "EXPENSE",
-              paymentMethod: "CREDIT_CARD",
-              creditCardId: cardId,
-              installmentsCount: 1,
-            }}
-          />
-          {card && <EditCreditCardDialog card={card} />}
-          <Button
-            variant="outline"
-            size="icon"
-            title={card?.isActive ? "Desactivar tarjeta" : "Activar tarjeta"}
-            onClick={() => setConfirmToggle(true)}
-          >
-            <Power className={cn("h-4 w-4", card?.isActive ? "text-emerald-600" : "text-destructive")} />
-          </Button>
+        {/* ── Columna izquierda: tarjeta + botones ── */}
+        <div className="flex flex-col gap-3">
+          {card ? (
+            <CreditCardVisual
+              card={card}
+              backgroundColor={data?.card.backgroundColor ?? card.backgroundColor ?? null}
+            />
+          ) : (
+            <Skeleton className="w-full rounded-2xl" style={{ aspectRatio: "1.586" }} />
+          )}
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            <CreateMovementDialog
+              label="Nueva compra"
+              initialValues={{ type: "EXPENSE", paymentMethod: "CREDIT_CARD", creditCardId: cardId, installmentsCount: 1 }}
+            />  
+            {card && <EditCreditCardDialog card={card} />}
+            <Button
+              variant="outline"
+              size="icon"
+              title={card?.isActive ? "Desactivar tarjeta" : "Activar tarjeta"}
+              onClick={() => setConfirmToggle(true)}
+            >
+              <Power className={cn("h-4 w-4", card?.isActive ? "text-emerald-600" : "text-destructive")} />
+            </Button>
+            {card && <DeleteCreditCardDialog cardId={card.id} cardName={card.name} />}
+          </div>
+
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+                    
+          </div>
+        </div>
+
+        {/* ── Columna derecha: selector de período + detalle ── */}
+        <div className="flex flex-col gap-3">
+          {/* Selector de período */}
+          {periods && periods.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground shrink-0">Resumen</span>
+              <Select
+                value={activePeriod ? `${activePeriod.year}-${activePeriod.month}` : ""}
+                onValueChange={(val) => {
+                  const [y, m] = val.split("-").map(Number);
+                  setSelectedPeriod({ year: y, month: m });
+                }}
+              >
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {periods.map((p) => (
+                    <SelectItem key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
+                      {MONTHS[p.month - 1]} {p.year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Detalle del resumen — crece para llenar la altura restante */}
+          <div className="flex-1 min-h-0">
+            {isLoading ? (
+              <div className="h-full min-h-[180px] rounded-2xl border bg-card p-5 flex flex-col gap-4 animate-pulse">
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="h-8 w-44" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Skeleton className="h-10" />
+                  <Skeleton className="h-10" />
+                </div>
+              </div>
+            ) : !data ? (
+              <div className="h-full min-h-[120px] flex items-center justify-center rounded-2xl border bg-card text-muted-foreground text-sm">
+                No hay resúmenes para esta tarjeta todavía.
+              </div>
+            ) : (
+              <StatementCard
+                data={data}
+                totalToPay={totalToPay}
+                installments={installments}
+                consumptions={consumptions}
+                onEditDates={() => {
+                  setDraftClosing(data.period.closingDate.slice(0, 10));
+                  setDraftDue(data.period.dueDate.slice(0, 10));
+                  setEditDatesOpen(true);
+                }}
+                onClose={() => setConfirmClose(true)}
+                onPay={() => setPayStatementOpen(true)}
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Period selector ── */}
-      {periods && periods.length > 0 && (
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Resumen</span>
-          <Select
-            value={activePeriod ? `${activePeriod.year}-${activePeriod.month}` : ""}
-            onValueChange={(val) => {
-              const [y, m] = val.split("-").map(Number);
-              setSelectedPeriod({ year: y, month: m });
-            }}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {periods.map((p) => (
-                <SelectItem key={`${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
-                  {MONTHS[p.month - 1]} {p.year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* ── Statement detail ── */}
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-5 w-40" />
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-14" />
-            <Skeleton className="h-14" />
-          </div>
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ) : !data ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">
-          No hay resúmenes para esta tarjeta todavía.
-        </div>
-      ) : (
-        <>
-          {/* Statement summary card */}
-          <div className="rounded-2xl border bg-card p-5 space-y-4">
-            {/* Header row: period + status + actions */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold">
-                  {MONTHS[data.period.month - 1]} {data.period.year}
-                </p>
-                <StatementStatusBadge status={data.period.status} />
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                {data.period.status === "OPEN" && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      title="Editar fechas"
-                      onClick={() => {
-                        setDraftClosing(data.period.closingDate.slice(0, 10));
-                        setDraftDue(data.period.dueDate.slice(0, 10));
-                        setEditDatesOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => setConfirmClose(true)}
-                    >
-                      <Lock className="h-3 w-3" />
-                      Cerrar
-                    </Button>
-                  </>
-                )}
-                {data.period.status === "CLOSED" && (
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => setPayStatementOpen(true)}
-                  >
-                    <CreditCard className="h-3 w-3" />
-                    Pagar
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Amounts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
-                  {data.period.status === "OPEN" ? "Acumulado" : "Total"}
-                </p>
-                <p className="text-2xl font-bold tabular-nums">
-                  {formatCurrency(data.period.status === "OPEN" ? totalToPay : data.period.totalCents)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {installments.length} cuota{installments.length !== 1 ? "s" : ""} · {consumptions.length} consumo{consumptions.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Cierre</p>
-                  <p className="text-sm font-medium">{formatDate(data.period.closingDate)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Vencimiento</p>
-                  <p className="text-sm font-medium">{formatDate(data.period.dueDate)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Tabs: Consumos / Cuotas ── */}
-          <Tabs defaultValue="consumptions">
-            <TabsList className="w-full">
-              <TabsTrigger value="consumptions" className="flex-1 gap-1.5">
-                <ShoppingBag className="h-3.5 w-3.5" />
-                Consumos
-                {consumptions.length > 0 && (
-                  <Badge variant="secondary" className="text-xs h-4 px-1.5">{consumptions.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="installments" className="flex-1 gap-1.5">
-                <CreditCard className="h-3.5 w-3.5" />
-                Cuotas
-                {installments.length > 0 && (
-                  <Badge variant="secondary" className="text-xs h-4 px-1.5">{installments.length}</Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="consumptions" className="mt-4 space-y-3">
-              {consumptions.length === 0 ? (
-                <EmptyTab message="No hay consumos en este resumen." />
-              ) : (
-                consumptions.map((p) => (
-                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
-                ))
+      {/* ── Tabs: Consumos / Cuotas (ancho completo) ── */}
+      {!isLoading && data && (
+        <Tabs defaultValue="consumptions">
+          <TabsList className="w-full">
+            <TabsTrigger value="consumptions" className="flex-1 gap-1.5">
+              <ShoppingBag className="h-3.5 w-3.5" />
+              Consumos
+              {consumptions.length > 0 && (
+                <Badge variant="secondary" className="text-xs h-4 px-1.5">{consumptions.length}</Badge>
               )}
-            </TabsContent>
-
-            <TabsContent value="installments" className="mt-4 space-y-3">
-              {installments.length === 0 ? (
-                <EmptyTab message="No hay cuotas en este resumen." />
-              ) : (
-                installments.map((p) => (
-                  <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
-                ))
+            </TabsTrigger>
+            <TabsTrigger value="installments" className="flex-1 gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" />
+              Cuotas
+              {installments.length > 0 && (
+                <Badge variant="secondary" className="text-xs h-4 px-1.5">{installments.length}</Badge>
               )}
-            </TabsContent>
-          </Tabs>
-        </>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="consumptions" className="mt-4 space-y-3">
+            {consumptions.length === 0 ? (
+              <EmptyTab message="No hay consumos en este resumen." />
+            ) : (
+              consumptions.map((p) => (
+                <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="installments" className="mt-4 space-y-3">
+            {installments.length === 0 ? (
+              <EmptyTab message="No hay cuotas en este resumen." />
+            ) : (
+              installments.map((p) => (
+                <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* ── Editar fechas ── */}
