@@ -5,6 +5,7 @@ export type BankAccount = {
   id: number;
   name: string;
   type: "BANK" | "WALLET";
+  currentBalanceCents: number;
 };
 
 export function useBankAccounts() {
@@ -14,7 +15,7 @@ export function useBankAccounts() {
       const accounts = await getAccounts({ status: "active" });
       return accounts
         .filter((a) => a.type === "BANK" || a.type === "WALLET")
-        .map((a) => ({ id: a.id, name: a.name, type: a.type as "BANK" | "WALLET" }));
+        .map((a) => ({ id: a.id, name: a.name, type: a.type as "BANK" | "WALLET", currentBalanceCents: a.currentBalanceCents }));
     },
   });
 }

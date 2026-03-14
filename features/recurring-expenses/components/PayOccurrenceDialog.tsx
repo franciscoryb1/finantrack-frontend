@@ -164,7 +164,10 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
                 <SelectContent>
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={a.id.toString()}>
-                      {a.name}
+                      <span>{a.name}</span>
+                      <span className="ml-2 text-muted-foreground text-xs">
+                        {formatCurrency(a.currentBalanceCents)}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

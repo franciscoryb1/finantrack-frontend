@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { movementSchema, MovementFormValues } from "../schemas/movement.schema";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
@@ -350,7 +350,10 @@ export function MovementForm({ onSubmit, defaultValues, initialParentCategoryId,
                       <SelectContent>
                         {accounts.map((a) => (
                           <SelectItem key={a.id} value={a.id.toString()}>
-                            {a.name}
+                            <span>{a.name}</span>
+                            <span className="ml-2 text-muted-foreground text-xs">
+                              {formatCurrency(a.currentBalanceCents)}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -520,7 +523,10 @@ export function MovementForm({ onSubmit, defaultValues, initialParentCategoryId,
                       <SelectContent>
                         {accounts.map((a) => (
                           <SelectItem key={a.id} value={a.id.toString()}>
-                            {a.name}
+                            <span>{a.name}</span>
+                            <span className="ml-2 text-muted-foreground text-xs">
+                              {formatCurrency(a.currentBalanceCents)}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
