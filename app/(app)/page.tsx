@@ -200,14 +200,6 @@ export default function DashboardPage() {
 
         <div className="flex flex-wrap gap-2">
           <ImportLegacyPurchaseDialog />
-          <CreateTransferDialog
-            trigger={
-              <Button variant="outline" size="sm">
-                <ArrowLeftRight className="h-4 w-4 mr-1.5" />
-                Transferir
-              </Button>
-            }
-          />
           <CreateMovementDialog />
         </div>
       </div>
@@ -349,7 +341,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* ── 3. Desglose de gastos — full width ────────────────────────────────── */}
-      <Card className="flex flex-col py-0">
+      <Card className="flex flex-col py-0 gap-0">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div>
             <h2 className="text-sm font-semibold">Desglose de gastos</h2>
@@ -472,6 +464,14 @@ export default function DashboardPage() {
                 </PopoverContent>
               </Popover>
             )}
+            <CreateTransferDialog
+              trigger={
+                <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs gap-1.5">
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  Transferir
+                </Button>
+              }
+            />
             <Link href="/accounts" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Ver todas →
             </Link>
@@ -567,12 +567,12 @@ export default function DashboardPage() {
             Ver todos →
           </Link>
         </div>
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden py-0 gap-0">
           {loadingRecurring ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
+            <div className="divide-y">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-card px-4 py-3">
-                  <div className="h-10 rounded bg-muted animate-pulse" />
+                <div key={i} className="px-4 py-3">
+                  <div className="h-9 rounded bg-muted animate-pulse" />
                 </div>
               ))}
             </div>
@@ -582,9 +582,15 @@ export default function DashboardPage() {
               <Link href="/recurring-expenses" className="underline hover:no-underline">Configurar</Link>
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
+            <div className="divide-y">
               {sortedOccs.map((occ, i) => (
-                <div key={`${occ.recurringExpense.id}-${occ.dueDate}-${i}`} className="bg-card px-4">
+                <div
+                  key={`${occ.recurringExpense.id}-${occ.dueDate}-${i}`}
+                  className={cn(
+                    "px-4",
+                    occ.status === "OVERDUE" && "bg-red-50/60 dark:bg-red-950/20",
+                  )}
+                >
                   <OccurrenceRow occurrence={occ} compact />
                 </div>
               ))}
