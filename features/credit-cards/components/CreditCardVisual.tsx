@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { CreditCard } from "../api/credit-cards.api";
+import { cn } from "@/lib/utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -54,23 +55,32 @@ function Chip() {
 export function BrandMark({ brand }: { brand: string | null | undefined }) {
   if (brand === "VISA") {
     return (
-      <span
-        className="font-black italic text-white text-2xl tracking-tight leading-none"
-        style={{ fontFamily: "Georgia, serif", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+      <svg
+        viewBox="0 0 780 500"
+        className="h-10 w-auto"
+        style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }}
+        aria-label="Visa"
       >
-        VISA
-      </span>
+        <path
+          fill="white"
+          d="M293.2 348.7l33.4-195.8h53.4l-33.4 195.8H293.2zm237.1-191.7c-10.6-4-27.2-8.3-47.9-8.3-52.8 0-90 26.6-90.3 64.7-.3 28.2 26.6 43.9 46.9 53.3 20.8 9.7 27.8 15.9 27.7 24.6-.1 13.3-16.6 19.3-32 19.3-21.4 0-32.8-3-50.4-10.3l-6.9-3.1-7.5 43.9c12.5 5.5 35.6 10.3 59.6 10.5 56.3 0 92.8-26.3 93.2-67.1.2-22.3-14-39.3-44.8-53.3-18.7-9.1-30.1-15.1-30-24.3 0-8.1 9.7-16.8 30.6-16.8 17.5-.3 30.1 3.6 40 7.6l4.8 2.2 7.1-41.2zM638.1 152.9h-41.3c-12.8 0-22.3 3.5-27.9 16.4l-79.2 179.4h56l11.2-29.3 68.4.1 6.5 29.3H681l-42.9-195.9zm-64.6 126.6l21.3-54.9 7.9-22.8 4.3 22.5 13.5 55.2h-47zm-331.8-126.6L189.4 286.4l-5.6-27.2c-9.7-31.3-40-65.2-73.9-82.1l47.9 171.5 56.6-.1 84.2-195.6-56.9.5z"
+        />
+        <path
+          fill="#F9A533"
+          d="M158.5 152.9H73.2l-.7 4.1c66.5 16.1 110.5 55 128.7 101.7l-18.5-89.7c-3.2-12.2-12.6-15.5-24-15.9-.1-.1-.1-.2-.2-.2z"
+        />
+      </svg>
     );
   }
   if (brand === "MASTERCARD") {
     return (
       <div className="flex items-center">
         <div
-          className="w-7 h-7 rounded-full bg-red-500 opacity-95"
+          className="w-9 h-9 rounded-full bg-red-500 opacity-95"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
         />
         <div
-          className="w-7 h-7 rounded-full bg-orange-400 opacity-90 -ml-3"
+          className="w-9 h-9 rounded-full bg-orange-400 opacity-90 -ml-4"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
         />
       </div>
@@ -84,14 +94,15 @@ export function BrandMark({ brand }: { brand: string | null | undefined }) {
 type Props = {
   card: CreditCard;
   backgroundColor?: string | null;
+  className?: string;
 };
 
-export function CreditCardVisual({ card, backgroundColor }: Props) {
+export function CreditCardVisual({ card, backgroundColor, className }: Props) {
   const bg = getCardBackground(card.brand, backgroundColor);
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden select-none"
+      className={cn("relative rounded-2xl overflow-hidden select-none", className ?? "w-full")}
       style={{
         ...bg,
         aspectRatio: "1.586",

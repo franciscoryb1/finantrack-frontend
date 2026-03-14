@@ -24,13 +24,10 @@ export function CreateCreditCardDialog() {
       bankAccountId: values.bankAccountId,
       limitCents: values.limit * 100,
       cardLast4: values.cardLast4,
-      cardExpiresAt: new Date(
-        values.expiryYear,
-        values.expiryMonth - 1,
-        1
-      ).toISOString(),
+      cardExpiresAt: new Date(values.expiryYear, values.expiryMonth - 1, 1).toISOString(),
       isActive: values.isActive,
-    };    
+      backgroundColor: values.backgroundColor || undefined,
+    };
 
     try {
       await mutation.mutateAsync(payload);

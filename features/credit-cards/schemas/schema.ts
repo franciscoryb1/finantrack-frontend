@@ -16,6 +16,8 @@ export const creditCardSchema = z.object({
   expiryYear: z.number().min(new Date().getFullYear()),
 
   isActive: z.boolean(),
+
+  backgroundColor: z.string().optional(),
 });
 
 export type CreditCardFormValues = z.infer<

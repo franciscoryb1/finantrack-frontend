@@ -30,12 +30,9 @@ export function EditCreditCardDialog({ card }: Props) {
             bankAccountId: values.bankAccountId,
             limitCents: values.limit * 100,
             cardLast4: values.cardLast4,
-            cardExpiresAt: new Date(
-                values.expiryYear,
-                values.expiryMonth - 1,
-                1
-            ).toISOString(),
+            cardExpiresAt: new Date(values.expiryYear, values.expiryMonth - 1, 1).toISOString(),
             isActive: values.isActive,
+            backgroundColor: values.backgroundColor || undefined,
         };
 
         try {
@@ -66,6 +63,7 @@ export function EditCreditCardDialog({ card }: Props) {
                         bankAccountId: card.bankAccount.id,
                         expiryMonth: new Date(card.cardExpiresAt).getUTCMonth() + 1,
                         expiryYear: new Date(card.cardExpiresAt).getUTCFullYear(),
+                        backgroundColor: card.backgroundColor ?? "",
                     }}
                     onSubmit={handleSubmit}
                     submitLabel="Guardar cambios"

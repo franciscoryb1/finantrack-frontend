@@ -190,7 +190,7 @@ export default function CreditCardsPage() {
                 !card.isActive && "opacity-55",
               )}
             >
-              <CreditCardVisual card={card} backgroundColor={ov?.backgroundColor ?? null} />
+              <CreditCardVisual card={card} backgroundColor={card.backgroundColor ?? ov?.backgroundColor ?? null} />
               <StatementInfo card={card} ov={ov} />
             </Link>
           ))}

@@ -14,6 +14,7 @@ export type CreditCard = {
   cardLast4: string;
   cardExpiresAt: string;
   isActive: boolean;
+  backgroundColor?: string | null;
   bankAccount: {
     id: number;
     name: string;
@@ -43,6 +44,7 @@ export type CreateCreditCardInput = {
   cardExpiresAt: string;
   bankAccountId: number;
   isActive: boolean;
+  backgroundColor?: string;
 };
 
 export type UpdateCreditCardInput = {
@@ -53,6 +55,7 @@ export type UpdateCreditCardInput = {
   cardLast4: string;
   cardExpiresAt: string;
   isActive: boolean;
+  backgroundColor?: string;
 };
 
 /* ===============================
@@ -74,9 +77,24 @@ export async function getCreditCardSummary(cardId: number) {
   );
 }
 
+export type CreditCardDeletePreview = {
+  purchasesCount: number;
+  installmentsCount: number;
+  statementsCount: number;
+  paymentsCount: number;
+};
+
 export async function createCreditCard(data: CreateCreditCardInput) {
   return apiFetch<CreditCard>("/credit-cards", {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function getCreditCardDeletePreview(cardId: number) {
+  return apiFetch<CreditCardDeletePreview>(`/credit-cards/${cardId}/delete-preview`);
+}
+
+export async function deleteCreditCard(cardId: number) {
+  return apiFetch<void>(`/credit-cards/${cardId}`, { method: "DELETE" });
 }
