@@ -39,3 +39,7 @@ export function updateTransfer(id: number, data: UpdateTransferInput) {
     body: JSON.stringify(data),
   });
 }
+
+export function deleteTransfer(id: number) {
+  return apiFetch<void>(`/account-transfers/${id}`, { method: "DELETE" });
+}

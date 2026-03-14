@@ -41,6 +41,7 @@ import { EditMovementDialog } from "./EditMovementDialog";
 import { EditTransferDialog } from "@/features/account-transfers/components/EditTransferDialog";
 import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/components/EditCreditCardPurchaseDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
+import { useDeleteTransfer } from "@/features/account-transfers/hooks/useDeleteTransfer";
 
 const PAGE_SIZE = 10;
 
@@ -125,7 +126,9 @@ export function MovementsTable({ items, loading }: Props) {
   const [editTransferItem, setEditTransferItem] = useState<DashboardActivityItem | null>(null);
   const [editPurchaseItem, setEditPurchaseItem] = useState<DashboardActivityItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<DashboardActivityItem | null>(null);
+  const [deleteTransferItem, setDeleteTransferItem] = useState<DashboardActivityItem | null>(null);
   const deleteMovement = useDeleteMovement();
+  const deleteTransfer = useDeleteTransfer();
 
   function handleRowClick(item: DashboardActivityItem) {
     if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.purchaseId) {
@@ -254,6 +257,13 @@ export function MovementsTable({ items, loading }: Props) {
                         <DropdownMenuItem onClick={() => setEditTransferItem(item)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTransferItem(item)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -394,6 +404,13 @@ export function MovementsTable({ items, loading }: Props) {
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTransferItem(item)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -458,6 +475,32 @@ export function MovementsTable({ items, loading }: Props) {
           onOpenChange={(open) => { if (!open) setEditPurchaseItem(null); }}
         />
       )}
+
+      {/* ── Diálogo confirmar eliminar transferencia ── */}
+      <AlertDialog open={!!deleteTransferItem} onOpenChange={(open) => { if (!open) setDeleteTransferItem(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar transferencia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán los dos movimientos asociados y se revertirán los saldos de ambas cuentas. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deleteTransferItem?.transferData) {
+                  await deleteTransfer.mutateAsync(deleteTransferItem.transferData.id);
+                  setDeleteTransferItem(null);
+                }
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Diálogo confirmar eliminar ── */}
       <AlertDialog open={!!deleteItem} onOpenChange={(open) => { if (!open) setDeleteItem(null); }}>
