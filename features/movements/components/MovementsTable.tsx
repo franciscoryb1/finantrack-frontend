@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Pencil, Trash2, CreditCard, ArrowLeftRight, Repeat2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, CreditCard, Repeat2, ArrowUp, ArrowDown, Users, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { TagBadge } from "@/features/tags/components/TagBadge";
 import {
   Tooltip,
@@ -38,14 +38,17 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { EditMovementDialog } from "./EditMovementDialog";
+import { EditBalanceAdjustmentDialog } from "./EditBalanceAdjustmentDialog";
 import { EditTransferDialog } from "@/features/account-transfers/components/EditTransferDialog";
 import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/components/EditCreditCardPurchaseDialog";
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
 import { useDeleteTransfer } from "@/features/account-transfers/hooks/useDeleteTransfer";
+import { SharedExpenseBadge } from "@/features/shared-expenses/components/SharedExpenseBadge";
+import { RegisterReimbursementDialog } from "@/features/shared-expenses/components/RegisterReimbursementDialog";
 
 const PAGE_SIZE = 10;
 
-type ItemType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
+type ItemType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN" | "BALANCE_ADJUSTMENT";
 
 function isTransfer(type: ItemType) {
   return type === "TRANSFER_OUT" || type === "TRANSFER_IN";
@@ -55,28 +58,58 @@ function isSystemGenerated(type: ItemType) {
   return type === "STATEMENT_PAYMENT";
 }
 
-function getAmountColor(type: ItemType) {
+function isBalanceAdjustment(type: ItemType) {
+  return type === "BALANCE_ADJUSTMENT";
+}
+
+function getAmountColor(type: ItemType, balanceAdjIncreased?: boolean | null) {
   if (type === "INCOME") return "text-green-700 dark:text-green-400";
   if (type === "TRANSFER_OUT" || type === "TRANSFER_IN" || type === "STATEMENT_PAYMENT")
     return "text-blue-700 dark:text-blue-400";
+  if (type === "BALANCE_ADJUSTMENT")
+    return balanceAdjIncreased
+      ? "text-green-700 dark:text-green-400"
+      : "text-red-700 dark:text-red-400";
   return "text-red-700 dark:text-red-400";
 }
 
-function getBarColor(type: ItemType) {
+function getBarColor(type: ItemType, balanceAdjIncreased?: boolean | null) {
   if (type === "INCOME") return "bg-green-500";
   if (type === "TRANSFER_OUT" || type === "TRANSFER_IN" || type === "STATEMENT_PAYMENT")
     return "bg-blue-400";
+  if (type === "BALANCE_ADJUSTMENT") return balanceAdjIncreased ? "bg-green-500" : "bg-red-500";
   return "bg-red-500";
 }
 
-function getAmountPrefix(type: ItemType) {
-  return type === "INCOME" || type === "TRANSFER_IN" ? "+" : "-";
+function getAmountPrefix(type: ItemType, balanceAdjIncreased?: boolean | null) {
+  if (type === "INCOME" || type === "TRANSFER_IN") return "+";
+  if (type === "BALANCE_ADJUSTMENT") return balanceAdjIncreased ? "+" : "-";
+  return "-";
 }
 
 function SystemIcon({ type }: { type: ItemType }) {
   if (type === "STATEMENT_PAYMENT")
     return <CreditCard className="h-4 w-4 text-blue-400" />;
+  if (type === "BALANCE_ADJUSTMENT")
+    return <SlidersHorizontal className="h-4 w-4 text-violet-400" />;
   return null;
+}
+
+function IncomeSourceBadge({ source }: { source: "PURCHASE_REIMBURSEMENT" | "SHARED_REIMBURSEMENT" }) {
+  if (source === "PURCHASE_REIMBURSEMENT") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
+        <RotateCcw className="h-2.5 w-2.5" />
+        Reintegro promo
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800 shrink-0">
+      <Users className="h-2.5 w-2.5" />
+      Gasto compartido
+    </span>
+  );
 }
 
 type Props = {
@@ -122,11 +155,20 @@ function ItemSource({ item }: { item: DashboardActivityItem }) {
 
 export function MovementsTable({ items, loading }: Props) {
   const [page, setPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [editItem, setEditItem] = useState<DashboardActivityItem | null>(null);
+  const [editBalanceAdjItem, setEditBalanceAdjItem] = useState<DashboardActivityItem | null>(null);
   const [editTransferItem, setEditTransferItem] = useState<DashboardActivityItem | null>(null);
   const [editPurchaseItem, setEditPurchaseItem] = useState<DashboardActivityItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<DashboardActivityItem | null>(null);
   const [deleteTransferItem, setDeleteTransferItem] = useState<DashboardActivityItem | null>(null);
+  type SharedExpenseInfo = { sharedAmountCents: number; receivedAmountCents: number; pendingAmountCents: number };
+  const [reimbursementTarget, setReimbursementTarget] = useState<{
+    kind: "movement" | "purchase";
+    sourceId: number;
+    info: SharedExpenseInfo;
+    description: string | null;
+  } | null>(null);
   const deleteMovement = useDeleteMovement();
   const deleteTransfer = useDeleteTransfer();
 
@@ -139,6 +181,8 @@ export function MovementsTable({ items, loading }: Props) {
     const type = item.type as ItemType;
     if (isTransfer(type) && item.transferData) {
       setEditTransferItem(item);
+    } else if (isBalanceAdjustment(type)) {
+      setEditBalanceAdjItem(item);
     } else if (!isSystemGenerated(type) && !isTransfer(type)) {
       setEditItem(item);
     }
@@ -146,7 +190,11 @@ export function MovementsTable({ items, loading }: Props) {
 
   useEffect(() => {
     setPage(1);
-  }, [items]);
+  }, [items, sortOrder]);
+
+  function toggleSort() {
+    setSortOrder((o) => (o === "desc" ? "asc" : "desc"));
+  }
 
   if (loading) {
     return (
@@ -166,8 +214,14 @@ export function MovementsTable({ items, loading }: Props) {
     );
   }
 
-  const totalPages = Math.ceil(items.length / PAGE_SIZE);
-  const paginated = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const sortedItems = [...items].sort((a, b) => {
+    const dateA = new Date(a.purchaseDate ?? a.occurredAt).getTime();
+    const dateB = new Date(b.purchaseDate ?? b.occurredAt).getTime();
+    return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+  });
+
+  const totalPages = Math.ceil(sortedItems.length / PAGE_SIZE);
+  const paginated = sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="space-y-3">
@@ -175,6 +229,19 @@ export function MovementsTable({ items, loading }: Props) {
 
         {/* ── Vista mobile ── */}
         <div className="md:hidden divide-y">
+          <div className="flex items-center justify-end px-4 py-2 border-b bg-muted/50">
+            <button
+              onClick={toggleSort}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Fecha
+              {sortOrder === "desc" ? (
+                <ArrowDown className="h-3.5 w-3.5" />
+              ) : (
+                <ArrowUp className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
           {paginated.map((item) => {
             const type = item.type as ItemType;
             const isClickable =
@@ -189,7 +256,7 @@ export function MovementsTable({ items, loading }: Props) {
               className={cn("flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors", isClickable && "cursor-pointer")}
               onClick={() => isClickable && handleRowClick(item)}
             >
-              <div className={cn("w-1 self-stretch rounded-full shrink-0", getBarColor(item.type as ItemType))} />
+              <div className={cn("w-1 self-stretch rounded-full shrink-0", getBarColor(item.type as ItemType, item.balanceAdjustmentIncreased))} />
 
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm leading-snug truncate flex items-center gap-1.5">
@@ -207,6 +274,9 @@ export function MovementsTable({ items, loading }: Props) {
                     </TooltipProvider>
                   )}
                 </p>
+                {item.incomeSource && (
+                  <IncomeSourceBadge source={item.incomeSource} />
+                )}
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 flex-wrap">
                   <ItemSource item={item} />
                   {item.installmentInfo && (
@@ -230,18 +300,26 @@ export function MovementsTable({ items, loading }: Props) {
                     <TagBadge key={tag.id} tag={tag} />
                   ))}
                 </div>
+                {item.sharedExpense && (
+                  <SharedExpenseBadge
+                    info={item.sharedExpense}
+                    onRegister={item.sharedExpense.pendingAmountCents > 0 ? () => setReimbursementTarget({
+                      kind: item.kind === "CREDIT_CARD_INSTALLMENT" ? "purchase" : "movement",
+                      sourceId: item.kind === "CREDIT_CARD_INSTALLMENT" ? (item.installmentInfo?.purchaseId ?? item.id) : item.id,
+                      info: item.sharedExpense!,
+                      description: item.description,
+                    }) : undefined}
+                  />
+                )}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
-                  <p className={cn("font-semibold tabular-nums text-sm", getAmountColor(item.type as ItemType))}>
-                    {getAmountPrefix(item.type as ItemType)}{formatCurrency(item.amountCents)}
+                  <p className={cn("font-semibold tabular-nums text-sm", getAmountColor(item.type as ItemType, item.balanceAdjustmentIncreased))}>
+                    {getAmountPrefix(item.type as ItemType, item.balanceAdjustmentIncreased)}{formatCurrency(item.amountCents)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {formatDate(item.purchaseDate ?? item.occurredAt)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                    reg. {formatDate(item.registeredAt)}
                   </p>
                 </div>
 
@@ -278,7 +356,13 @@ export function MovementsTable({ items, loading }: Props) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditItem(item)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            isBalanceAdjustment(item.type as ItemType)
+                              ? setEditBalanceAdjItem(item)
+                              : setEditItem(item)
+                          }
+                        >
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
@@ -308,7 +392,19 @@ export function MovementsTable({ items, loading }: Props) {
         <table className="hidden md:table w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Fecha</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <button
+                  onClick={toggleSort}
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  Fecha
+                  {sortOrder === "desc" ? (
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Descripción</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Categoría</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Origen</th>
@@ -354,6 +450,9 @@ export function MovementsTable({ items, loading }: Props) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      {item.incomeSource && (
+                        <IncomeSourceBadge source={item.incomeSource} />
+                      )}
                     </span>
                     {item.installmentInfo && (
                       <span className="text-xs text-muted-foreground">
@@ -372,6 +471,17 @@ export function MovementsTable({ items, loading }: Props) {
                         ))}
                       </div>
                     )}
+                    {item.sharedExpense && (
+                      <SharedExpenseBadge
+                        info={item.sharedExpense}
+                        onRegister={item.sharedExpense.pendingAmountCents > 0 ? () => setReimbursementTarget({
+                          kind: item.kind === "CREDIT_CARD_INSTALLMENT" ? "purchase" : "movement",
+                          sourceId: item.kind === "CREDIT_CARD_INSTALLMENT" ? (item.installmentInfo?.purchaseId ?? item.id) : item.id,
+                          info: item.sharedExpense!,
+                          description: item.description,
+                        }) : undefined}
+                      />
+                    )}
                   </div>
                 </td>
 
@@ -387,8 +497,8 @@ export function MovementsTable({ items, loading }: Props) {
                   <ItemSource item={item} />
                 </td>
 
-                <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", getAmountColor(item.type as ItemType))}>
-                  {getAmountPrefix(item.type as ItemType)}{formatCurrency(item.amountCents)}
+                <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", getAmountColor(item.type as ItemType, item.balanceAdjustmentIncreased))}>
+                  {getAmountPrefix(item.type as ItemType, item.balanceAdjustmentIncreased)}{formatCurrency(item.amountCents)}
                 </td>
 
                 <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
@@ -422,7 +532,13 @@ export function MovementsTable({ items, loading }: Props) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditItem(item)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            isBalanceAdjustment(item.type as ItemType)
+                              ? setEditBalanceAdjItem(item)
+                              : setEditItem(item)
+                          }
+                        >
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
@@ -455,6 +571,15 @@ export function MovementsTable({ items, loading }: Props) {
           item={editItem}
           open={!!editItem}
           onOpenChange={(open) => { if (!open) setEditItem(null); }}
+        />
+      )}
+
+      {/* ── Diálogo editar ajuste de saldo ── */}
+      {editBalanceAdjItem && (
+        <EditBalanceAdjustmentDialog
+          item={editBalanceAdjItem}
+          open={!!editBalanceAdjItem}
+          onOpenChange={(open) => { if (!open) setEditBalanceAdjItem(null); }}
         />
       )}
 
@@ -506,12 +631,20 @@ export function MovementsTable({ items, loading }: Props) {
       <AlertDialog open={!!deleteItem} onOpenChange={(open) => { if (!open) setDeleteItem(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar movimiento?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteItem?.type === "BALANCE_ADJUSTMENT"
+                ? "¿Eliminar ajuste de saldo?"
+                : "¿Eliminar movimiento?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteItem?.description
-                ? `"${deleteItem.description}"`
-                : "Este movimiento"}{" "}
-              será eliminado permanentemente. Esta acción no se puede deshacer.
+              {deleteItem?.type === "BALANCE_ADJUSTMENT"
+                ? "El registro del ajuste será eliminado del historial. El saldo actual de la cuenta no se verá afectado."
+                : <>
+                    {deleteItem?.description
+                      ? `"${deleteItem.description}"`
+                      : "Este movimiento"}{" "}
+                    será eliminado permanentemente. Esta acción no se puede deshacer.
+                  </>}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -531,11 +664,25 @@ export function MovementsTable({ items, loading }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ── Diálogo registrar reintegro gasto compartido ── */}
+      {reimbursementTarget && (
+        <RegisterReimbursementDialog
+          open={!!reimbursementTarget}
+          onOpenChange={(open) => { if (!open) setReimbursementTarget(null); }}
+          kind={reimbursementTarget.kind}
+          sourceId={reimbursementTarget.sourceId}
+          sharedAmountCents={reimbursementTarget.info.sharedAmountCents}
+          receivedAmountCents={reimbursementTarget.info.receivedAmountCents}
+          pendingAmountCents={reimbursementTarget.info.pendingAmountCents}
+          expenseDescription={reimbursementTarget.description}
+        />
+      )}
+
       {/* ── Paginación ── */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, items.length)} de {items.length}
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sortedItems.length)} de {sortedItems.length}
           </span>
           <Pagination className="w-auto mx-0">
             <PaginationContent>
