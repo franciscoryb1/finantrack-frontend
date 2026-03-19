@@ -53,3 +53,11 @@ export function deactivateAccount(id: number) {
 export function deleteAccount(id: number) {
   return apiFetch<void>(`/accounts/${id}`, { method: "DELETE" });
 }
+
+export function adjustBalance(id: number, data: { newBalanceCents: number; note?: string; categoryId?: number }) {
+  return apiFetch<Account>(`/accounts/${id}/adjust`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
