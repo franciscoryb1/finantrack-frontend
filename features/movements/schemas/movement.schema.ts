@@ -18,6 +18,10 @@ export const movementSchema = z
     reimbursementAmount: z.number().positive().optional(),
     reimbursementAccountId: z.number().optional(),
     reimbursementAt: z.string().optional(),
+    // Gasto compartido (solo aplica para EXPENSE)
+    sharedExpenseEnabled: z.boolean().optional(),
+    sharedAmount: z.number().positive().optional(),
+    sharedReimbursementAccountId: z.number().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === "ACCOUNT") {
@@ -60,6 +64,23 @@ export const movementSchema = z
             path: ["reimbursementAccountId"],
           });
         }
+      }
+    }
+
+    if (data.sharedExpenseEnabled) {
+      if (!data.sharedAmount || data.sharedAmount <= 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Ingresá el monto compartido",
+          path: ["sharedAmount"],
+        });
+      }
+      if (!data.sharedReimbursementAccountId) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Seleccioná la cuenta donde entra el dinero",
+          path: ["sharedReimbursementAccountId"],
+        });
       }
     }
   });

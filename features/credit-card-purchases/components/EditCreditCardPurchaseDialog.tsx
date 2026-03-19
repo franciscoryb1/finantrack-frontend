@@ -66,6 +66,12 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   const today = new Date().toISOString().split("T")[0];
   const initialReimbursementAt = item.installmentInfo?.reimbursementAt?.slice(0, 10) ?? today;
 
+  // Gasto compartido inicial
+  const initialSharedExpenseEnabled = !!(item.sharedExpense?.sharedAmountCents);
+  const initialSharedAmountCents = item.sharedExpense?.sharedAmountCents
+    ? item.sharedExpense.sharedAmountCents / 100
+    : undefined;
+
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId);
   const [description, setDescription] = useState(item.description ?? "");
@@ -77,6 +83,10 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   const [reimbursementAmount, setReimbursementAmount] = useState<number | undefined>(initialReimbursementAmount);
   const [reimbursementAccountId, setReimbursementAccountId] = useState<number | undefined>(initialReimbursementAccountId);
   const [reimbursementAt, setReimbursementAt] = useState(initialReimbursementAt);
+
+  // Gasto compartido
+  const [sharedExpenseEnabled, setSharedExpenseEnabled] = useState(initialSharedExpenseEnabled);
+  const [sharedAmountCentsInput, setSharedAmountCentsInput] = useState<number | undefined>(initialSharedAmountCents);
 
   const { data: categories } = useCategories("EXPENSE");
   const { data: creditCards } = useCreditCards();
@@ -100,6 +110,8 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
     setReimbursementAmount(initialReimbursementAmount);
     setReimbursementAccountId(initialReimbursementAccountId);
     setReimbursementAt(initialReimbursementAt);
+    setSharedExpenseEnabled(initialSharedExpenseEnabled);
+    setSharedAmountCentsInput(initialSharedAmountCents);
   }
 
   async function handleSubmit() {
@@ -140,19 +152,31 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
       }
     }
 
+    // Calcular payload de gasto compartido
+    let sharedPayload: { sharedAmountCents?: number | null } = {};
+    if (!sharedExpenseEnabled && initialSharedExpenseEnabled) {
+      sharedPayload = { sharedAmountCents: null };
+    } else if (sharedExpenseEnabled && sharedAmountCentsInput) {
+      const newSharedCents = Math.round(sharedAmountCentsInput * 100);
+      if (newSharedCents !== item.sharedExpense?.sharedAmountCents) {
+        sharedPayload = { sharedAmountCents: newSharedCents };
+      }
+    }
+
     try {
       if (cardChanged) {
         await reassign.mutateAsync({
           id: purchaseId,
           data: { creditCardId: creditCardId! },
         });
-        if (categoryId !== initialCategoryId || description.trim() !== (item.description ?? "") || Object.keys(reimbursementPayload).length > 0) {
+        if (categoryId !== initialCategoryId || description.trim() !== (item.description ?? "") || Object.keys(reimbursementPayload).length > 0 || Object.keys(sharedPayload).length > 0) {
           await update.mutateAsync({
             id: purchaseId,
             data: {
               categoryId: categoryId ?? null,
               description: description.trim() || null,
               ...reimbursementPayload,
+              ...sharedPayload,
             },
           });
         }
@@ -163,6 +187,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
             categoryId: categoryId ?? null,
             description: description.trim() || null,
             ...reimbursementPayload,
+            ...sharedPayload,
           },
         });
       }
@@ -175,14 +200,15 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className={cn(
-        "max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none",
+        "p-0 gap-0 max-h-[90vh] sm:max-h-none",
         reimbursementEnabled ? "sm:max-w-2xl" : "sm:max-w-sm"
       )}>
-        <DialogHeader>
+        <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Editar compra</DialogTitle>
         </DialogHeader>
 
-        <div className={cn("pt-1", reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
+        <div className={cn("flex-1 overflow-y-auto sm:overflow-visible px-6 py-4")}>
+        <div className={cn(reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
           {/* Columna izquierda: campos principales */}
           <div className={cn("space-y-4", reimbursementEnabled && "sm:flex-1")}>
             {/* Info de la compra (read-only) */}
@@ -370,6 +396,32 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
                 </div>
               )}
             </div>
+
+            {/* Gasto compartido */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Es gasto compartido</p>
+                  <p className="text-xs text-muted-foreground">Parte del gasto la paga otra persona</p>
+                </div>
+                <Switch
+                  checked={sharedExpenseEnabled}
+                  onCheckedChange={(checked) => {
+                    setSharedExpenseEnabled(checked);
+                    if (!checked) setSharedAmountCentsInput(undefined);
+                  }}
+                />
+              </div>
+              {sharedExpenseEnabled && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Monto compartido ($)</Label>
+                  <CurrencyInput
+                    value={sharedAmountCentsInput}
+                    onChange={setSharedAmountCentsInput}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Columna derecha: panel de reintegro (solo desktop) */}
@@ -412,45 +464,46 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
             </div>
           )}
         </div>
+        </div>
 
-        <div className="flex justify-between gap-2 pt-3 mt-1">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={anyPending}>
+        <div className="shrink-0 px-6 pt-3 pb-4 border-t flex items-center justify-between gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={anyPending}>
+                Eliminar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar compra?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se eliminarán todas las cuotas pendientes de esta compra. Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    await del.mutateAsync(purchaseId);
+                    onOpenChange(false);
+                  }}
+                >
                   Eliminar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Eliminar compra?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Se eliminarán todas las cuotas pendientes de esta compra. Esta acción no se puede deshacer.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={async () => {
-                      await del.mutateAsync(purchaseId);
-                      onOpenChange(false);
-                    }}
-                  >
-                    Eliminar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button disabled={anyPending} onClick={handleSubmit}>
-                Guardar cambios
-              </Button>
-            </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" disabled={anyPending} onClick={handleSubmit}>
+              Guardar cambios
+            </Button>
           </div>
+        </div>
         </DialogContent>
     </Dialog>
   );

@@ -8,7 +8,7 @@ export type DashboardActivityItem = {
   purchaseDate: string | null; // Solo para cuotas: fecha original de la compra.
   registeredAt: string;        // Fecha de registro del movimiento o compra en el sistema.
   amountCents: number;
-  type: "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
+  type: "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN" | "BALANCE_ADJUSTMENT";
   isRecurring: boolean;
   tags: { id: number; name: string; color: string | null }[];
   category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
@@ -25,6 +25,13 @@ export type DashboardActivityItem = {
     fromAccount: { id: number; name: string };
     toAccount: { id: number; name: string };
   } | null;
+  sharedExpense: {
+    sharedAmountCents: number;
+    receivedAmountCents: number;
+    pendingAmountCents: number;
+  } | null;
+  incomeSource: "PURCHASE_REIMBURSEMENT" | "SHARED_REIMBURSEMENT" | null;
+  balanceAdjustmentIncreased: boolean | null;
 };
 
 export type DashboardActivityResponse = {

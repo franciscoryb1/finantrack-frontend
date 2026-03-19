@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 
-export type MovementType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN";
+export type MovementType = "INCOME" | "EXPENSE" | "STATEMENT_PAYMENT" | "TRANSFER_OUT" | "TRANSFER_IN" | "BALANCE_ADJUSTMENT";
 
 export type MovementTag = { id: number; name: string; color: string | null };
 
@@ -15,6 +15,9 @@ export type Movement = {
   category: { id: number; name: string; type: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   recurringPayment?: { id: number } | null;
   tags: MovementTag[];
+  sharedFromMovementId?: number | null;
+  sharedFromCreditCardPurchaseId?: number | null;
+  reimbursedPurchase?: { id: number } | null;
 };
 
 export type MovementsResponse = {
@@ -50,6 +53,7 @@ export type CreateMovementInput = {
   occurredAt: string;
   description?: string;
   tagIds?: number[];
+  sharedAmountCents?: number;
 };
 
 export function getMovements(params: ListMovementsParams) {
@@ -79,7 +83,11 @@ export function createMovement(data: CreateMovementInput) {
   });
 }
 
-export type UpdateMovementInput = Partial<CreateMovementInput>;
+export type UpdateMovementInput = Partial<Omit<CreateMovementInput, "sharedAmountCents">> & {
+  categoryId?: number | null;
+  description?: string | null;
+  sharedAmountCents?: number | null;
+};
 
 export function updateMovement(id: number, data: UpdateMovementInput) {
   return apiFetch<Movement>(`/movements/${id}`, {
