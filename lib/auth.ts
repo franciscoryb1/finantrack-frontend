@@ -32,3 +32,16 @@ export async function logout() {
     method: "POST",
   });
 }
+
+export async function register(data: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+}) {
+  return apiFetch("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Link from "next/link";
 import { login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  useEffect(() => { document.title = "Iniciar sesión | Finantrack"; }, []);
+
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
@@ -258,8 +261,11 @@ export default function LoginPage() {
           </Form>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Tu sesión está protegida con JWT y cookies httpOnly.
+        <p className="text-center text-sm text-muted-foreground">
+          ¿No tenés cuenta?{" "}
+          <Link href="/register" className="text-primary hover:underline font-medium">
+            Registrate
+          </Link>
         </p>
       </div>
     </div>
