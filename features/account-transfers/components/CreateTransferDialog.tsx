@@ -149,10 +149,10 @@ export function CreateTransferDialog({ trigger }: Props) {
 
           {/* Resumen visual */}
           {fromAccount && toAccount && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm">
-              <span className="font-medium truncate">{fromAccount.name}</span>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm min-w-0">
+              <span className="font-medium truncate min-w-0">{fromAccount.name}</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span className="font-medium truncate">{toAccount.name}</span>
+              <span className="font-medium truncate min-w-0">{toAccount.name}</span>
             </div>
           )}
 

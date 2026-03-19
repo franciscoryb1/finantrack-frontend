@@ -166,7 +166,7 @@ export function CreditCardForm({ defaultValues, onSubmit, submitLabel }: Props) 
             <FormItem>
               <FormLabel>Color</FormLabel>
               <FormControl>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {COLOR_PRESETS.map((preset) => {
                     const isSelected = field.value === preset.value;
                     return (

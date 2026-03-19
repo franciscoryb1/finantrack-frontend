@@ -50,7 +50,7 @@ export function ImportLegacyPurchaseDialog() {
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="sticky top-0 bg-background z-10 -mx-6 px-6 pb-4 border-b">
           <DialogTitle>Cargar compra en cuotas anterior</DialogTitle>
         </DialogHeader>
 

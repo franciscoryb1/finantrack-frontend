@@ -90,8 +90,7 @@ export function TagPicker({ value, onChange }: Props) {
             placeholder="Buscar o crear etiqueta..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 text-xs mb-2"
-            autoFocus
+            className="h-8 mb-2"
           />
           <div className="space-y-0.5 max-h-44 overflow-y-auto">
             {filtered.map((tag) => (

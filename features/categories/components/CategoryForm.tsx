@@ -115,7 +115,6 @@ export function CategoryForm({
                   />
                   <Input
                     placeholder="Ej: Alimentación, Transporte..."
-                    autoFocus
                     {...field}
                   />
                 </div>

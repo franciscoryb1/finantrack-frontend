@@ -29,7 +29,7 @@ export function KpiCard({ title, value, subtitle, icon: Icon, trend = "neutral",
         <div className="h-8 w-32 rounded-md bg-muted animate-pulse" />
       ) : (
         <p className={cn(
-          "text-xl sm:text-2xl font-bold tracking-tight",
+          "text-base sm:text-xl md:text-2xl font-bold tracking-tight break-all",
           trend === "positive" && "text-green-700 dark:text-green-400",
           trend === "negative" && "text-red-700 dark:text-red-400",
         )}>

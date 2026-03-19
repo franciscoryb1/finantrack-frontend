@@ -62,8 +62,7 @@ function InlineEdit({ value, color, onSave, onCancel }: InlineEditProps) {
       <Input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="h-7 text-sm"
-        autoFocus
+        className="h-7"
         disabled={saving}
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSave();

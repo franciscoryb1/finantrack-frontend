@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { CategoryItem } from "@/features/categories/components/CategoryItem";
 import { CreateCategoryDialog } from "@/features/categories/components/CreateCategoryDialog";
@@ -15,6 +15,8 @@ import { CategoryType } from "@/features/categories/api/categories.api";
 type Tab = CategoryType;
 
 export default function CategoriesPage() {
+  useEffect(() => { document.title = "Categorías | Finantrack"; }, []);
+
   const [tab, setTab] = useState<Tab>("EXPENSE");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [creating, setCreating] = useState(false);
