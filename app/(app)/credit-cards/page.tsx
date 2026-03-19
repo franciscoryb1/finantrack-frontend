@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { useInstallmentsOverview } from "@/features/installments/hooks/useInstallmentsOverview";
@@ -138,6 +138,8 @@ function PageSkeleton() {
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function CreditCardsPage() {
+  useEffect(() => { document.title = "Tarjetas de crédito | Finantrack"; }, []);
+
   const { data: cards, isLoading: loadingCards } = useCreditCards();
   const { data: overview, isLoading: loadingOverview } = useInstallmentsOverview();
 

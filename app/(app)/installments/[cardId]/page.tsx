@@ -47,6 +47,11 @@ export default function CardInstallmentsPage() {
         selectedPeriod?.month
     );
 
+    useEffect(() => {
+        const name = data?.card?.name;
+        document.title = name ? `${name} — Cuotas | Finantrack` : "Cuotas | Finantrack";
+    }, [data?.card?.name]);
+
 
     function formatDate(iso: string) {
         const [year, month, day] = iso.slice(0, 10).split("-").map(Number);

@@ -34,15 +34,15 @@ import Link from "next/link";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
 
 function getPeriodDates(year: number, month: number) {
   return {
     fromDate: new Date(Date.UTC(year, month - 1, 1)).toISOString(),
-    toDate:   new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString(),
+    toDate: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString(),
   };
 }
 
@@ -50,20 +50,22 @@ function getPeriodDates(year: number, month: number) {
 
 export default function DashboardPage() {
   const now = new Date();
-  const [year, setYear]   = useState(now.getFullYear());
+  const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
   const isCurrentPeriod = year === now.getFullYear() && month === now.getMonth() + 1;
 
-  function prevMonth() { month === 1  ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1); }
-  function nextMonth() { month === 12 ? (setMonth(1),  setYear(y => y + 1)) : setMonth(m => m + 1); }
+  useEffect(() => { document.title = "Dashboard | Finantrack"; }, []);
+
+  function prevMonth() { month === 1 ? (setMonth(12), setYear(y => y - 1)) : setMonth(m => m - 1); }
+  function nextMonth() { month === 12 ? (setMonth(1), setYear(y => y + 1)) : setMonth(m => m + 1); }
 
   const { fromDate, toDate } = getPeriodDates(year, month);
 
-  const { data: summary,  isLoading: loadingSummary  } = useMovementsSummary({ fromDate, toDate });
+  const { data: summary, isLoading: loadingSummary } = useMovementsSummary({ fromDate, toDate });
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(year, month);
   const { data: occurrences, isLoading: loadingRecurring } = useRecurringExpenseOccurrences(year, month);
-  const { data: accounts,    isLoading: loadingAccounts  } = useAccounts({ status: "active" });
+  const { data: accounts, isLoading: loadingAccounts } = useAccounts({ status: "active" });
 
   // ── Dashboard accounts config (localStorage) ─────────────────────────────────
   const ACCOUNTS_STORAGE_KEY = "dashboard:account-ids";
@@ -122,7 +124,7 @@ export default function DashboardPage() {
       // Excluir cuotas múltiples si el toggle está apagado
       if (!includeCuotas && item.kind === "CREDIT_CARD_INSTALLMENT" && (item.installmentInfo?.installmentsCount ?? 1) > 1) continue;
       const root = item.category.parent?.name ?? item.category.name;
-      const sub  = item.category.parent ? item.category.name : null;
+      const sub = item.category.parent ? item.category.name : null;
       if (!map.has(root)) map.set(root, { totalCents: 0, subcategories: new Map() });
       const entry = map.get(root)!;
       entry.totalCents += item.amountCents;
@@ -148,24 +150,24 @@ export default function DashboardPage() {
     return Array.from(names).sort();
   }, [activity]);
 
-  const ccItems    = (activity?.items ?? []).filter(i => i.kind === "CREDIT_CARD_INSTALLMENT");
-  const totalCuotas  = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) > 1).reduce((s, i) => s + i.amountCents, 0);
+  const ccItems = (activity?.items ?? []).filter(i => i.kind === "CREDIT_CARD_INSTALLMENT");
+  const totalCuotas = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) > 1).reduce((s, i) => s + i.amountCents, 0);
   const totalCompras = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1).reduce((s, i) => s + i.amountCents, 0);
-  const ccSingleExp  = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1 && i.type === "EXPENSE").reduce((s, i) => s + i.amountCents, 0);
+  const ccSingleExp = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1 && i.type === "EXPENSE").reduce((s, i) => s + i.amountCents, 0);
 
-  const incomeCents    = summary?.totalIncomeCents ?? 0;
-  const expensesCents  = (summary?.totalExpenseCents ?? 0) + ccSingleExp;
-  const netCents       = summary?.netBalanceCents ?? 0;
-  const maxBar         = Math.max(incomeCents, expensesCents, 1);
-  const incomeBarPct   = (incomeCents   / maxBar) * 100;
-  const expenseBarPct  = (expensesCents / maxBar) * 100;
+  const incomeCents = summary?.totalIncomeCents ?? 0;
+  const expensesCents = (summary?.totalExpenseCents ?? 0) + ccSingleExp;
+  const netCents = summary?.netBalanceCents ?? 0;
+  const maxBar = Math.max(incomeCents, expensesCents, 1);
+  const incomeBarPct = (incomeCents / maxBar) * 100;
+  const expenseBarPct = (expensesCents / maxBar) * 100;
 
   const totalAccBalance = (accounts ?? []).reduce((s, a) => s + a.currentBalanceCents, 0);
 
-  const overdue  = (occurrences ?? []).filter(o => o.status === "OVERDUE");
-  const pending  = (occurrences ?? []).filter(o => o.status === "PENDING");
-  const paid     = (occurrences ?? []).filter(o => o.status === "PAID");
-  const sortedOccs  = [...overdue, ...pending, ...paid];
+  const overdue = (occurrences ?? []).filter(o => o.status === "OVERDUE");
+  const pending = (occurrences ?? []).filter(o => o.status === "PENDING");
+  const paid = (occurrences ?? []).filter(o => o.status === "PAID");
+  const sortedOccs = [...overdue, ...pending, ...paid];
   const pendingCount = overdue.length + pending.length;
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -352,48 +354,48 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             {/* Filtro de categorías */}
             {availableCategories.length > 0 && <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <ListFilter className="h-3.5 w-3.5" />
-                    Categorías
-                    {hiddenCategories.length > 0 && (
-                      <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center">
-                        {availableCategories.length - hiddenCategories.filter(h => availableCategories.includes(h)).length}
-                      </span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-60 p-0">
-                  <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <p className="text-sm font-semibold">Categorías</p>
-                    {hiddenCategories.length > 0 && (
-                      <button
-                        onClick={() => setHiddenCategories([])}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                  <ListFilter className="h-3.5 w-3.5" />
+                  Categorías
+                  {hiddenCategories.length > 0 && (
+                    <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center">
+                      {availableCategories.length - hiddenCategories.filter(h => availableCategories.includes(h)).length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-60 p-0">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <p className="text-sm font-semibold">Categorías</p>
+                  {hiddenCategories.length > 0 && (
+                    <button
+                      onClick={() => setHiddenCategories([])}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Ver todas
+                    </button>
+                  )}
+                </div>
+                <div className="py-1">
+                  {availableCategories.map(name => {
+                    const hidden = hiddenCategories.includes(name);
+                    return (
+                      <label
+                        key={name}
+                        className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
                       >
-                        Ver todas
-                      </button>
-                    )}
-                  </div>
-                  <div className="py-1">
-                    {availableCategories.map(name => {
-                      const hidden = hiddenCategories.includes(name);
-                      return (
-                        <label
-                          key={name}
-                          className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
-                        >
-                          <Checkbox
-                            checked={!hidden}
-                            onCheckedChange={() => toggleCategory(name)}
-                          />
-                          <span className="text-sm">{name}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>}
+                        <Checkbox
+                          checked={!hidden}
+                          onCheckedChange={() => toggleCategory(name)}
+                        />
+                        <span className="text-sm">{name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>}
 
             {/* Toggle cuotas */}
             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -551,7 +553,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold">Gastos fijos</h2>
+            <h2 className="text-base font-semibold">Gastos recurrentes</h2>
             {!loadingRecurring && (occurrences ?? []).length > 0 && (
               <span className={cn(
                 "text-[11px] font-semibold px-2 py-0.5 rounded-full",
@@ -578,7 +580,7 @@ export default function DashboardPage() {
             </div>
           ) : sortedOccs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
-              Sin gastos fijos configurados para este período.{" "}
+              Sin gastos recurrentes configurados para este período.{" "}
               <Link href="/recurring-expenses" className="underline hover:no-underline">Configurar</Link>
             </p>
           ) : (
@@ -611,7 +613,7 @@ export default function DashboardPage() {
             <MovementsTable
               items={(activity?.items ?? []).filter(
                 i => i.kind === "MOVEMENT" ||
-                     (i.kind === "CREDIT_CARD_INSTALLMENT" && (i.installmentInfo?.installmentsCount ?? 1) === 1),
+                  (i.kind === "CREDIT_CARD_INSTALLMENT" && (i.installmentInfo?.installmentsCount ?? 1) === 1),
               )}
               loading={loadingActivity}
             />
@@ -620,7 +622,7 @@ export default function DashboardPage() {
             <InstallmentsTable
               items={(activity?.items ?? []).filter(
                 i => i.kind === "CREDIT_CARD_INSTALLMENT" &&
-                     (i.installmentInfo?.installmentsCount ?? 1) > 1,
+                  (i.installmentInfo?.installmentsCount ?? 1) > 1,
               )}
               loading={loadingActivity}
             />

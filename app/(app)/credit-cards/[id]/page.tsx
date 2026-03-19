@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
@@ -281,6 +281,10 @@ export default function CreditCardDetailPage() {
   const { data: cards } = useCreditCards();
   const card = cards?.find((c) => c.id === cardId);
   const toggle = useToggleCreditCard(cardId);
+
+  useEffect(() => {
+    document.title = card ? `${card.name} | Finantrack` : "Tarjeta | Finantrack";
+  }, [card?.name]);
 
   const { data: periods, isLoading: loadingPeriods } = useCardPeriods(cardId);
 

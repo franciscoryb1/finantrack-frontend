@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useProfile } from "@/features/profile/hooks/useProfile";
@@ -298,6 +298,8 @@ function ChangePasswordSection() {
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  useEffect(() => { document.title = "Mi perfil | Finantrack"; }, []);
+
   const { logout } = useAuth();
 
   return (
