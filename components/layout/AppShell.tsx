@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,6 +238,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-60 p-4">
+            <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
             <SidebarContent onNavigate={() => setSheetOpen(false)} />
           </SheetContent>
         </Sheet>
