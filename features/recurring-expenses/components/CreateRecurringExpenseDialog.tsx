@@ -57,18 +57,25 @@ export function CreateRecurringExpenseDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="p-0 gap-0 sm:max-w-lg max-h-[90vh]">
+        <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Nuevo gasto fijo</DialogTitle>
         </DialogHeader>
 
-        {serverError && (
-          <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
-            {serverError}
-          </p>
-        )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {serverError && (
+            <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 mb-4">
+              {serverError}
+            </p>
+          )}
+          <RecurringExpenseForm onSubmit={handleSubmit} formId="create-recurring-form" />
+        </div>
 
-        <RecurringExpenseForm onSubmit={handleSubmit} />
+        <div className="shrink-0 px-6 pt-3 pb-5 border-t">
+          <Button type="submit" form="create-recurring-form" className="w-full">
+            Guardar
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

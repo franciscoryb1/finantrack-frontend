@@ -7,8 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { MovementForm } from "./MovementForm";
 import { useUpdateMovement } from "../hooks/useUpdateMovement";
+import { registerMovementReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
 import { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
 
@@ -39,6 +41,10 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
     paymentMethod: "ACCOUNT",
     accountId: item.account?.id,
     tagIds: item.tags?.map((t) => t.id) ?? [],
+    sharedExpenseEnabled: !!item.sharedExpense?.sharedAmountCents,
+    sharedAmount: item.sharedExpense?.sharedAmountCents
+      ? item.sharedExpense.sharedAmountCents / 100
+      : undefined,
   };
 
   async function handleSubmit(values: MovementFormValues) {
@@ -47,6 +53,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
     try {
+      const sharedAmountCents = values.sharedAmount ? Math.round(values.sharedAmount * 100) : undefined;
       await updateMovement.mutateAsync({
         id: item.id,
         data: {
@@ -57,8 +64,17 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
           description: values.description || undefined,
           occurredAt,
           tagIds: values.tagIds ?? [],
+          sharedAmountCents: values.sharedExpenseEnabled ? sharedAmountCents : null,
         },
       });
+      if (sharedAmountCents && values.sharedReimbursementAccountId) {
+        await registerMovementReimbursement(item.id, {
+          accountId: values.sharedReimbursementAccountId,
+          amountCents: sharedAmountCents,
+          occurredAt,
+          description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
+        });
+      }
       onOpenChange(false);
     } catch (e) {
       setServerError(e instanceof Error ? e.message : "Error inesperado");
@@ -67,23 +83,30 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); onOpenChange(o); }}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="p-0 gap-0 max-h-[92svh] sm:max-w-lg">
+        <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Editar movimiento</DialogTitle>
         </DialogHeader>
 
-        {serverError && (
-          <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
-            {serverError}
-          </p>
-        )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {serverError && (
+            <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 mb-4">
+              {serverError}
+            </p>
+          )}
+          <MovementForm
+            onSubmit={handleSubmit}
+            defaultValues={defaultValues}
+            initialParentCategoryId={initialParentCategoryId}
+            formId="edit-movement-form"
+          />
+        </div>
 
-        <MovementForm
-          onSubmit={handleSubmit}
-          defaultValues={defaultValues}
-          initialParentCategoryId={initialParentCategoryId}
-          submitLabel="Guardar cambios"
-        />
+        <div className="shrink-0 px-6 pt-3 pb-5 border-t">
+          <Button type="submit" form="edit-movement-form" className="w-full" size="lg">
+            Guardar cambios
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

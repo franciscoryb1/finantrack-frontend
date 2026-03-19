@@ -10,21 +10,21 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { MovementForm } from "./MovementForm";
 import { useCreateMovement } from "../hooks/useCreateMovement";
 import { useCreateCreditCardPurchase } from "@/features/credit-card-purchases/hooks/useCreateCreditCardPurchase";
+import { registerMovementReimbursement, registerPurchaseReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
 
 type Props = {
   initialValues?: Partial<MovementFormValues>;
   label?: string;
+  trigger?: React.ReactNode;
 };
 
-export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento" }: Props) {
+export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento", trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [reimbursementOpen, setReimbursementOpen] = useState(false);
   const createMovement = useCreateMovement();
   const createPurchase = useCreateCreditCardPurchase();
 
@@ -34,13 +34,15 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
     try {
+      const sharedAmountCents = values.sharedAmount ? Math.round(values.sharedAmount * 100) : undefined;
+
       if (values.paymentMethod === "CREDIT_CARD") {
         let reimbursementAt: string | undefined;
         if (values.reimbursementEnabled && values.reimbursementAt) {
           const [ry, rm, rd] = values.reimbursementAt.split("-").map(Number);
           reimbursementAt = new Date(ry, rm - 1, rd, 12, 0, 0).toISOString();
         }
-        await createPurchase.mutateAsync({
+        const purchase = await createPurchase.mutateAsync({
           creditCardId: values.creditCardId!,
           totalAmountCents: Math.round(values.amount * 100),
           installmentsCount: values.installmentsCount!,
@@ -52,9 +54,18 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
             reimbursementAccountId: values.reimbursementAccountId,
             reimbursementAt,
           }),
+          sharedAmountCents,
         });
+        if (sharedAmountCents && values.sharedReimbursementAccountId) {
+          await registerPurchaseReimbursement(purchase.id, {
+            accountId: values.sharedReimbursementAccountId,
+            amountCents: sharedAmountCents,
+            occurredAt,
+            description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
+          });
+        }
       } else {
-        await createMovement.mutateAsync({
+        const movement = await createMovement.mutateAsync({
           type: values.type,
           amountCents: Math.round(values.amount * 100),
           accountId: values.accountId!,
@@ -62,7 +73,16 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           description: values.description || undefined,
           occurredAt,
           tagIds: values.tagIds?.length ? values.tagIds : undefined,
+          sharedAmountCents,
         });
+        if (sharedAmountCents && values.sharedReimbursementAccountId) {
+          await registerMovementReimbursement(movement.id, {
+            accountId: values.sharedReimbursementAccountId,
+            amountCents: sharedAmountCents,
+            occurredAt,
+            description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
+          });
+        }
       }
       setOpen(false);
     } catch (e) {
@@ -71,33 +91,39 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { setServerError(null); setReimbursementOpen(false); } setOpen(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-1" />
-          {label}
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus className="h-4 w-4 mr-1" />
+            {label}
+          </Button>
+        )}
       </DialogTrigger>
 
-      <DialogContent className={cn(
-        "max-h-[90vh] overflow-y-auto sm:overflow-visible sm:max-h-none",
-        reimbursementOpen ? "sm:max-w-2xl" : "sm:max-w-lg"
-      )}>
-        <DialogHeader>
+      <DialogContent className="p-0 gap-0 max-h-[92svh] sm:max-w-lg">
+        <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Nuevo movimiento</DialogTitle>
         </DialogHeader>
 
-        {serverError && (
-          <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
-            {serverError}
-          </p>
-        )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {serverError && (
+            <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 mb-4">
+              {serverError}
+            </p>
+          )}
+          <MovementForm
+            onSubmit={handleSubmit}
+            defaultValues={initialValues}
+            formId="create-movement-form"
+          />
+        </div>
 
-        <MovementForm
-          onSubmit={handleSubmit}
-          defaultValues={initialValues}
-          onReimbursementChange={setReimbursementOpen}
-        />
+        <div className="shrink-0 px-6 pt-3 pb-5 border-t">
+          <Button type="submit" form="create-movement-form" className="w-full" size="lg">
+            Guardar movimiento
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -33,12 +33,14 @@ type Props = {
   onSubmit: (values: RecurringExpenseFormValues) => Promise<void>;
   defaultValues?: Partial<RecurringExpenseFormValues>;
   submitLabel?: string;
+  formId?: string;
 };
 
 export function RecurringExpenseForm({
   onSubmit,
   defaultValues,
   submitLabel = "Guardar",
+  formId,
 }: Props) {
   const today = new Date().toISOString().split("T")[0];
 
@@ -71,7 +73,7 @@ export function RecurringExpenseForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
         {/* Nombre */}
         <FormField
@@ -89,7 +91,7 @@ export function RecurringExpenseForm({
         />
 
         {/* Monto + Frecuencia */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="amount"
@@ -216,7 +218,7 @@ export function RecurringExpenseForm({
         )}
 
         {/* Fecha inicio + Fecha fin */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-hidden [&>*]:min-w-0">
           <FormField
             control={form.control}
             name="startDate"
@@ -224,7 +226,7 @@ export function RecurringExpenseForm({
               <FormItem>
                 <FormLabel>Fecha de inicio</FormLabel>
                 <FormControl>
-                  <Input type="date" className="w-full" {...field} />
+                  <Input type="date" className="w-full max-w-full" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -243,7 +245,7 @@ export function RecurringExpenseForm({
                 <FormControl>
                   <Input
                     type="date"
-                    className="w-full"
+                    className="w-full max-w-full"
                     value={field.value ?? ""}
                     onChange={field.onChange}
                   />
@@ -255,7 +257,7 @@ export function RecurringExpenseForm({
         </div>
 
         {/* Categoría */}
-        <div className={subCategories.length > 0 ? "grid grid-cols-2 gap-3" : undefined}>
+        <div className={subCategories.length > 0 ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : undefined}>
           <FormField
             control={form.control}
             name="categoryId"
@@ -340,9 +342,11 @@ export function RecurringExpenseForm({
           )}
         />
 
-        <Button type="submit" className="w-full">
-          {submitLabel}
-        </Button>
+        {!formId && (
+          <Button type="submit" className="w-full">
+            {submitLabel}
+          </Button>
+        )}
       </form>
     </Form>
   );
