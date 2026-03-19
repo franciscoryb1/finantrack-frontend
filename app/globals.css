@@ -2,10 +2,34 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Tailwind v4 no aplica cursor:pointer automáticamente — lo restauramos */
+button:not(:disabled),
+[role="button"],
+a[href],
+label[for],
+select {
+  cursor: pointer !important;
+}
+
 /* Oculta el botón nativo de revelar contraseña de Edge/Chrome */
 input::-ms-reveal,
 input::-ms-clear {
   display: none;
+}
+
+/* iOS Safari: input[type="date"] ignora width:100% sin esto */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Previene el zoom automático en iOS al hacer foco en inputs (requiere font-size >= 16px) */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 @custom-variant dark (&:is(.dark *));
