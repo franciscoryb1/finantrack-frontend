@@ -4,6 +4,7 @@ export type MeResponse = {
   user: {
     userId: number;
     email: string;
+    emailVerified: boolean;
   };
 };
 
@@ -43,5 +44,31 @@ export async function register(data: {
   return apiFetch("/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function verifyEmail(token: string) {
+  return apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
+    method: "GET",
+  });
+}
+
+export async function resendVerification() {
+  return apiFetch("/auth/resend-verification", {
+    method: "POST",
+  });
+}
+
+export async function forgotPassword(email: string) {
+  return apiFetch("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  return apiFetch("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, newPassword }),
   });
 }
