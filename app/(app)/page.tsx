@@ -8,6 +8,9 @@ import {
   Wallet,
   Settings2,
   ListFilter,
+  Sparkles,
+  BadgePlus,
+  MoveRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -205,6 +208,37 @@ export default function DashboardPage() {
           <CreateMovementDialog />
         </div>
       </div>
+
+      {/* ── Onboarding banner (solo cuando no hay cuentas) ─────────────────── */}
+      {!loadingAccounts && accounts?.length === 0 && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm">¡Bienvenido a Finantrack!</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Para empezar, creá una cuenta (efectivo, banco o billetera virtual) y luego registrá tus movimientos.
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
+                <BadgePlus className="h-3 w-3" /> Crear cuenta
+              </span>
+              <MoveRight className="h-3 w-3" />
+              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
+                <BadgePlus className="h-3 w-3" /> Registrar movimiento
+              </span>
+              <MoveRight className="h-3 w-3" />
+              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
+                <Sparkles className="h-3 w-3" /> Explorar
+              </span>
+            </div>
+          </div>
+          <Button asChild size="sm" className="shrink-0">
+            <Link href="/accounts">Crear primera cuenta</Link>
+          </Button>
+        </div>
+      )}
 
       {/* ── 2. Hero summary card ───────────────────────────────────────────── */}
       <Card className="overflow-hidden py-0">
