@@ -13,10 +13,13 @@ import { Plus } from "lucide-react";
 import { RecurringExpenseForm } from "./RecurringExpenseForm";
 import { useCreateRecurringExpense } from "../hooks/useCreateRecurringExpense";
 import { RecurringExpenseFormValues } from "../schemas/recurring-expense.schema";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
 export function CreateRecurringExpenseDialog() {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const create = useCreateRecurringExpense();
 
   async function handleSubmit(values: RecurringExpenseFormValues) {
@@ -48,8 +51,20 @@ export function CreateRecurringExpenseDialog() {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    if (!o) setServerError(null);
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setServerError(null); setOpen(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
@@ -68,7 +83,7 @@ export function CreateRecurringExpenseDialog() {
               {serverError}
             </p>
           )}
-          <RecurringExpenseForm onSubmit={handleSubmit} formId="create-recurring-form" />
+          <RecurringExpenseForm onSubmit={handleSubmit} formId="create-recurring-form" onDirtyChange={setIsDirty} />
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
@@ -78,5 +93,6 @@ export function CreateRecurringExpenseDialog() {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

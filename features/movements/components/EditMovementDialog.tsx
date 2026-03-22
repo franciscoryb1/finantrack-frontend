@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MovementForm } from "./MovementForm";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 import { useUpdateMovement } from "../hooks/useUpdateMovement";
 import { registerMovementReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
@@ -23,6 +24,8 @@ type Props = {
 export function EditMovementDialog({ item, open, onOpenChange }: Props) {
   const updateMovement = useUpdateMovement();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const initialParentCategoryId = item.category?.parent
     ? item.category.parent.id
@@ -81,8 +84,20 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    if (!o) setServerError(null);
+    onOpenChange(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); onOpenChange(o); }}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setServerError(null); onOpenChange(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="p-0 gap-0 max-h-[92svh] sm:max-w-lg">
         <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Editar movimiento</DialogTitle>
@@ -99,6 +114,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
             defaultValues={defaultValues}
             initialParentCategoryId={initialParentCategoryId}
             formId="edit-movement-form"
+            onDirtyChange={setIsDirty}
           />
         </div>
 
@@ -109,5 +125,6 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,6 +34,7 @@ type Props = {
   defaultValues?: Partial<RecurringExpenseFormValues>;
   submitLabel?: string;
   formId?: string;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 export function RecurringExpenseForm({
@@ -41,6 +42,7 @@ export function RecurringExpenseForm({
   defaultValues,
   submitLabel = "Guardar",
   formId,
+  onDirtyChange,
 }: Props) {
   const today = new Date().toISOString().split("T")[0];
 
@@ -59,6 +61,9 @@ export function RecurringExpenseForm({
       ...defaultValues,
     },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const selectedFrequency = form.watch("frequency");
   const isMonthly = selectedFrequency === "MONTHLY";

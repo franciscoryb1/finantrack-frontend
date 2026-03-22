@@ -15,6 +15,7 @@ import { useCreateMovement } from "../hooks/useCreateMovement";
 import { useCreateCreditCardPurchase } from "@/features/credit-card-purchases/hooks/useCreateCreditCardPurchase";
 import { registerMovementReimbursement, registerPurchaseReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
 type Props = {
   initialValues?: Partial<MovementFormValues>;
@@ -25,6 +26,8 @@ type Props = {
 export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento", trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const createMovement = useCreateMovement();
   const createPurchase = useCreateCreditCardPurchase();
 
@@ -90,8 +93,20 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    if (!o) setServerError(null);
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setServerError(null); setOpen(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button>
@@ -116,6 +131,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
             onSubmit={handleSubmit}
             defaultValues={initialValues}
             formId="create-movement-form"
+            onDirtyChange={setIsDirty}
           />
         </div>
 
@@ -126,5 +142,6 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
