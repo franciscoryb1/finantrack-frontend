@@ -171,7 +171,7 @@ function ProfileSection() {
               />
               <div className="flex gap-2">
                 <Button type="submit" size="sm" disabled={updateProfile.isPending}>
-                  Guardar
+                  {updateProfile.isPending ? "Guardando..." : "Guardar"}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>
                   Cancelar
@@ -286,7 +286,7 @@ function ChangePasswordSection() {
               )}
             />
             <Button type="submit" size="sm" disabled={changePassword.isPending}>
-              Actualizar contraseña
+              {changePassword.isPending ? "Actualizando..." : "Actualizar contraseña"}
             </Button>
           </form>
         </Form>

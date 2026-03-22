@@ -81,8 +81,8 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
-          <Button type="submit" form="edit-recurring-form" className="w-full">
-            Guardar cambios
+          <Button type="submit" form="edit-recurring-form" className="w-full" disabled={update.isPending}>
+            {update.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
         </div>
       </DialogContent>

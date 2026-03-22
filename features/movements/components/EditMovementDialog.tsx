@@ -103,8 +103,8 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
-          <Button type="submit" form="edit-movement-form" className="w-full" size="lg">
-            Guardar cambios
+          <Button type="submit" form="edit-movement-form" className="w-full" size="lg" disabled={updateMovement.isPending}>
+            {updateMovement.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
         </div>
       </DialogContent>

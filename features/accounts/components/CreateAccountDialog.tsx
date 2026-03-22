@@ -48,7 +48,7 @@ export function CreateAccountDialog({ open, onOpenChange }: Props) {
             {serverError}
           </p>
         )}
-        <AccountForm onSubmit={handleSubmit} />
+        <AccountForm onSubmit={handleSubmit} isPending={mutation.isPending} />
       </DialogContent>
     </Dialog>
   );

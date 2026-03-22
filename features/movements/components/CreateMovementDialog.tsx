@@ -120,8 +120,8 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
-          <Button type="submit" form="create-movement-form" className="w-full" size="lg">
-            Guardar movimiento
+          <Button type="submit" form="create-movement-form" className="w-full" size="lg" disabled={createMovement.isPending || createPurchase.isPending}>
+            {createMovement.isPending || createPurchase.isPending ? "Guardando..." : "Guardar movimiento"}
           </Button>
         </div>
       </DialogContent>

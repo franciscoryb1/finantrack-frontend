@@ -193,7 +193,7 @@ export function CreateTransferDialog({ trigger }: Props) {
               Cancelar
             </Button>
             <Button disabled={!isValid || transfer.isPending} onClick={handleSubmit}>
-              Transferir
+              {transfer.isPending ? "Transfiriendo..." : "Transferir"}
             </Button>
           </div>
         </div>

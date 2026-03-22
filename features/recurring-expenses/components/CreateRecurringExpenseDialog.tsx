@@ -72,8 +72,8 @@ export function CreateRecurringExpenseDialog() {
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
-          <Button type="submit" form="create-recurring-form" className="w-full">
-            Guardar
+          <Button type="submit" form="create-recurring-form" className="w-full" disabled={create.isPending}>
+            {create.isPending ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </DialogContent>
