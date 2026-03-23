@@ -14,9 +14,18 @@ export type InstallmentsOverview = {
     availableCents: number;
 
     openStatementAccumulatedCents: number;
+    currentPeriodAccumulatedCents: number;
     activeInstallmentsCount: number;
 
     openStatement: null | {
+      id: number;
+      sequenceNumber: number;
+      year: number;
+      month: number;
+      closingDate: string;
+      dueDate: string;
+    };
+    currentPeriodStatement: null | {
       id: number;
       sequenceNumber: number;
       year: number;

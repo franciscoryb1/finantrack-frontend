@@ -91,13 +91,20 @@ export function BrandMark({ brand }: { brand: string | null | undefined }) {
 
 // ── CreditCardVisual ──────────────────────────────────────────────────────────
 
+function formatShortDate(iso: string) {
+  const [, m, d] = iso.slice(0, 10).split("-");
+  return `${d}/${m}`;
+}
+
 type Props = {
   card: CreditCard;
   backgroundColor?: string | null;
   className?: string;
+  closingDate?: string | null;
+  dueDate?: string | null;
 };
 
-export function CreditCardVisual({ card, backgroundColor, className }: Props) {
+export function CreditCardVisual({ card, backgroundColor, className, closingDate, dueDate }: Props) {
   const bg = getCardBackground(card.brand, backgroundColor);
 
   return (
@@ -146,22 +153,36 @@ export function CreditCardVisual({ card, backgroundColor, className }: Props) {
 
       {/* Bottom row: name + expiry + brand */}
       <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
-        <div className="space-y-[2px]">
+        <div className="space-y-[3px]">
           <p
             className="text-white font-medium text-sm uppercase tracking-wider leading-tight"
             style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
           >
             {card.name}
           </p>
-          <div className="flex items-center gap-2">
-            <span className="text-white/45 text-[9px] uppercase tracking-widest">Vence</span>
-            <span
-              className="text-white font-mono text-[13px] tracking-wider"
-              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}
-            >
-              {formatExpiry(card.cardExpiresAt)}
-            </span>
-          </div>
+          {closingDate && dueDate ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <span className="text-white/45 text-[9px] uppercase tracking-widest">Cierre</span>
+                <span className="text-white font-mono text-[11px] tracking-wide" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
+                  {formatShortDate(closingDate)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-white/45 text-[9px] uppercase tracking-widest">Vto.</span>
+                <span className="text-white font-mono text-[11px] tracking-wide" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
+                  {formatShortDate(dueDate)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-white/45 text-[9px] uppercase tracking-widest">Vence</span>
+              <span className="text-white font-mono text-[13px] tracking-wider" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
+                {formatExpiry(card.cardExpiresAt)}
+              </span>
+            </div>
+          )}
         </div>
         <BrandMark brand={card.brand} />
       </div>
