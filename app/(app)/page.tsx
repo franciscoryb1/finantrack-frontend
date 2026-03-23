@@ -132,8 +132,20 @@ export default function DashboardPage() {
       const sub = item.category.parent ? item.category.name : null;
       if (!map.has(root)) map.set(root, { totalCents: 0, subcategories: new Map() });
       const entry = map.get(root)!;
-      entry.totalCents += item.amountCents;
-      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + item.amountCents);
+
+      // Calcular monto efectivo: descontar porción compartida y reintegros de tarjeta
+      let effectiveCents = item.amountCents;
+      if (item.sharedExpense) {
+        effectiveCents -= item.sharedExpense.sharedAmountCents;
+      }
+      if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.reimbursementAmountCents) {
+        const perCuota = Math.round(item.installmentInfo.reimbursementAmountCents / item.installmentInfo.installmentsCount);
+        effectiveCents -= perCuota;
+      }
+      effectiveCents = Math.max(0, effectiveCents);
+
+      entry.totalCents += effectiveCents;
+      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + effectiveCents);
     }
     return map;
   }, [activity, includeCuotas]);
