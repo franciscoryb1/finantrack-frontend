@@ -1,6 +1,6 @@
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/layout/AppShell";
-import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
+import { EmailVerificationGate } from "@/components/auth/EmailVerificationGate";
 
 export default function AppLayout({
   children,
@@ -9,10 +9,11 @@ export default function AppLayout({
 }) {
   return (
     <AuthProvider>
-      <EmailVerificationBanner />
-      <AppShell>
-        {children}
-      </AppShell>
+      <EmailVerificationGate>
+        <AppShell>
+          {children}
+        </AppShell>
+      </EmailVerificationGate>
     </AuthProvider>
   );
 }
