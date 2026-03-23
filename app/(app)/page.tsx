@@ -9,8 +9,8 @@ import {
   Settings2,
   ListFilter,
   Sparkles,
-  BadgePlus,
-  MoveRight,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,6 +32,7 @@ import { OccurrenceRow } from "@/features/recurring-expenses/components/Occurren
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { AccountType } from "@/features/accounts/api/accounts.api";
 import { TYPE_CONFIG } from "@/features/accounts/components/AccountItem";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import Link from "next/link";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(year, month);
   const { data: occurrences, isLoading: loadingRecurring } = useRecurringExpenseOccurrences(year, month);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts({ status: "active" });
+  const { data: categories, isLoading: loadingCategories } = useCategories();
 
   // ── Dashboard accounts config (localStorage) ─────────────────────────────────
   const ACCOUNTS_STORAGE_KEY = "dashboard:account-ids";
@@ -173,6 +175,14 @@ export default function DashboardPage() {
   const sortedOccs = [...overdue, ...pending, ...paid];
   const pendingCount = overdue.length + pending.length;
 
+  // ── Onboarding ──────────────────────────────────────────────────────────────
+  const onboardingLoading = loadingAccounts || loadingCategories || loadingSummary;
+  const hasAccounts = (accounts?.length ?? 0) > 0;
+  const hasIncomeCategory = categories?.some(c => c.type === "INCOME" && c.isActive) ?? false;
+  const hasExpenseCategory = categories?.some(c => c.type === "EXPENSE" && c.isActive) ?? false;
+  const hasMovements = (summary?.movementsCount ?? 0) > 0;
+  const showOnboarding = !onboardingLoading && !(hasAccounts && hasIncomeCategory && hasExpenseCategory && hasMovements);
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -209,34 +219,77 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Onboarding banner (solo cuando no hay cuentas) ─────────────────── */}
-      {!loadingAccounts && accounts?.length === 0 && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">¡Bienvenido a Finantrack!</p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Para empezar, creá una cuenta (efectivo, banco o billetera virtual) y luego registrá tus movimientos.
-            </p>
-            <div className="flex flex-wrap items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
-                <BadgePlus className="h-3 w-3" /> Crear cuenta
-              </span>
-              <MoveRight className="h-3 w-3" />
-              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
-                <BadgePlus className="h-3 w-3" /> Registrar movimiento
-              </span>
-              <MoveRight className="h-3 w-3" />
-              <span className="flex items-center gap-1 bg-muted rounded-full px-2 py-0.5">
-                <Sparkles className="h-3 w-3" /> Explorar
-              </span>
+      {/* ── Onboarding checklist ────────────────────────────────────────────── */}
+      {showOnboarding && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">¡Empezá a usar Finantrack!</p>
+              <p className="text-xs text-muted-foreground">Completá estos pasos para tener todo listo.</p>
             </div>
           </div>
-          <Button asChild size="sm" className="shrink-0">
-            <Link href="/accounts">Crear primera cuenta</Link>
-          </Button>
+          <div className="space-y-2">
+            {/* Paso 1: cuenta */}
+            <div className={cn("flex items-center gap-3 text-sm", hasAccounts && "opacity-50")}>
+              {hasAccounts
+                ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <span className={cn("flex-1", hasAccounts && "line-through")}>
+                Creá una cuenta (banco, efectivo o billetera virtual)
+              </span>
+              {!hasAccounts && (
+                <Button asChild size="sm" variant="outline" className="h-7 text-xs px-2.5 shrink-0">
+                  <Link href="/accounts">Crear cuenta</Link>
+                </Button>
+              )}
+            </div>
+
+            {/* Paso 2: categorías */}
+            {(() => {
+              const done = hasIncomeCategory && hasExpenseCategory;
+              const partial = hasIncomeCategory || hasExpenseCategory;
+              const label = !partial
+                ? "Agregá al menos una categoría de ingresos y una de gastos"
+                : !hasIncomeCategory
+                  ? "Agregá al menos una categoría de ingresos"
+                  : "Agregá al menos una categoría de gastos";
+              return (
+                <div className={cn("flex items-center gap-3 text-sm", done && "opacity-50")}>
+                  {done
+                    ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                    : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                  <span className={cn("flex-1", done && "line-through")}>{label}</span>
+                  {!done && (
+                    <Button asChild size="sm" variant="outline" className="h-7 text-xs px-2.5 shrink-0">
+                      <Link href="/categories">Ir a categorías</Link>
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Paso 3: primer movimiento */}
+            <div className={cn("flex items-center gap-3 text-sm", hasMovements && "opacity-50")}>
+              {hasMovements
+                ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                : <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+              <span className={cn("flex-1", hasMovements && "line-through")}>
+                Registrá tu primer movimiento
+              </span>
+              {!hasMovements && (
+                <CreateMovementDialog
+                  trigger={
+                    <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 shrink-0">
+                      Nuevo movimiento
+                    </Button>
+                  }
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
 
