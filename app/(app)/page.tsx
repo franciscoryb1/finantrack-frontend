@@ -133,19 +133,25 @@ export default function DashboardPage() {
       if (!map.has(root)) map.set(root, { totalCents: 0, subcategories: new Map() });
       const entry = map.get(root)!;
 
+      // Crédito de tarjeta: resta de la categoría si tiene categoría asociada
+      const isCredit = item.installmentInfo?.isCredit === true;
+      const sign = isCredit ? -1 : 1;
+
       // Calcular monto efectivo: descontar porción compartida y reintegros de tarjeta
       let effectiveCents = item.amountCents;
-      if (item.sharedExpense) {
-        effectiveCents -= item.sharedExpense.sharedAmountCents;
+      if (!isCredit) {
+        if (item.sharedExpense) {
+          effectiveCents -= item.sharedExpense.sharedAmountCents;
+        }
+        if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.reimbursementAmountCents) {
+          const perCuota = Math.round(item.installmentInfo.reimbursementAmountCents / item.installmentInfo.installmentsCount);
+          effectiveCents -= perCuota;
+        }
+        effectiveCents = Math.max(0, effectiveCents);
       }
-      if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.reimbursementAmountCents) {
-        const perCuota = Math.round(item.installmentInfo.reimbursementAmountCents / item.installmentInfo.installmentsCount);
-        effectiveCents -= perCuota;
-      }
-      effectiveCents = Math.max(0, effectiveCents);
 
-      entry.totalCents += effectiveCents;
-      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + effectiveCents);
+      entry.totalCents += sign * effectiveCents;
+      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + sign * effectiveCents);
     }
     return map;
   }, [activity, includeCuotas]);
@@ -168,9 +174,10 @@ export default function DashboardPage() {
   }, [activity]);
 
   const ccItems = (activity?.items ?? []).filter(i => i.kind === "CREDIT_CARD_INSTALLMENT");
-  const totalCuotas = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) > 1).reduce((s, i) => s + i.amountCents, 0);
-  const totalCompras = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1).reduce((s, i) => s + i.amountCents, 0);
-  const ccSingleExp = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1 && i.type === "EXPENSE").reduce((s, i) => s + i.amountCents, 0);
+  const totalCuotas = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) > 1 && !i.installmentInfo?.isCredit).reduce((s, i) => s + i.amountCents, 0);
+  const totalCompras = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1 && !i.installmentInfo?.isCredit).reduce((s, i) => s + i.amountCents, 0);
+  const ccCredits = ccItems.filter(i => i.installmentInfo?.isCredit === true).reduce((s, i) => s + i.amountCents, 0);
+  const ccSingleExp = ccItems.filter(i => (i.installmentInfo?.installmentsCount ?? 1) === 1 && i.type === "EXPENSE" && !i.installmentInfo?.isCredit).reduce((s, i) => s + i.amountCents, 0) - ccCredits;
 
   const incomeCents = summary?.totalIncomeCents ?? 0;
   const expensesCents = (summary?.totalExpenseCents ?? 0) + ccSingleExp;
