@@ -57,6 +57,21 @@ export type ReassignCardInput = {
   occurredAt?: string;
 };
 
+export type CreateCreditCardCreditInput = {
+  creditCardId: number;
+  amountCents: number;
+  occurredAt: string;
+  description?: string;
+  categoryId?: number;
+};
+
+export function createCreditCardCredit(data: CreateCreditCardCreditInput) {
+  return apiFetch<{ id: number }>("/credit-card-purchases/credit", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export function importLegacyPurchase(data: ImportLegacyPurchaseInput) {
   return apiFetch<{ id: number }>("/credit-card-purchases/legacy-import", {
     method: "POST",

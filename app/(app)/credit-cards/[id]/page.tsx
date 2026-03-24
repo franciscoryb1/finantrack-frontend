@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
 import { ChevronLeft, Pencil, Power, Lock, CreditCard, ShoppingBag } from "lucide-react";
+import { CreateCreditCardCreditDialog } from "@/features/credit-card-purchases/components/CreateCreditCardCreditDialog";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ type Purchase = {
   occurredAt: string;
   totalAmountCents: number;
   installmentsCount: number;
+  isCredit: boolean;
   category: { id: number; name: string; parent: { id: number; name: string } | null } | null;
   installmentForThisPeriod: { installmentNumber: number; amountCents: number; status: string };
 };
@@ -118,6 +120,39 @@ type Purchase = {
 function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
   const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
   const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
+
+  if (purchase.isCredit) {
+    return (
+      <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 text-[11px] font-medium px-2 h-5">
+                Devolución
+              </Badge>
+            </div>
+            <p className="font-medium text-sm leading-snug truncate mt-1">
+              {purchase.description ?? (
+                <span className="italic text-muted-foreground">Sin descripción</span>
+              )}
+            </p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <span className="text-xs text-muted-foreground">{formatDate(purchase.occurredAt)}</span>
+              {purchase.category && (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <CategoryBadge category={purchase.category} />
+                </>
+              )}
+            </div>
+          </div>
+          <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+            +{formatCurrency(Math.abs(amountCents))}
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 space-y-3 border-border/60">
@@ -306,8 +341,9 @@ export default function CreditCardDetailPage() {
   const sortedPurchases = [...(data?.purchases ?? [])].sort(
     (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
   );
-  const installments = sortedPurchases.filter((p) => p.installmentsCount > 1);
-  const consumptions = sortedPurchases.filter((p) => p.installmentsCount === 1);
+  const credits = sortedPurchases.filter((p) => p.isCredit);
+  const installments = sortedPurchases.filter((p) => !p.isCredit && p.installmentsCount > 1);
+  const consumptions = sortedPurchases.filter((p) => !p.isCredit && p.installmentsCount === 1);
 
   const totalToPay = sortedPurchases.reduce(
     (sum, p) => sum + p.installmentForThisPeriod.amountCents, 0,
@@ -354,7 +390,7 @@ export default function CreditCardDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 justify-end flex-wrap">
-                    
+            <CreateCreditCardCreditDialog creditCardId={cardId} />
           </div>
         </div>
 
@@ -419,6 +455,7 @@ export default function CreditCardDetailPage() {
 
       {/* ── Tabs: Consumos / Cuotas (ancho completo) ── */}
       {!isLoading && data && (
+        <>
         <Tabs defaultValue="consumptions">
           <TabsList className="w-full">
             <TabsTrigger value="consumptions" className="flex-1 gap-1.5">
@@ -457,6 +494,16 @@ export default function CreditCardDetailPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {credits.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Devoluciones</h3>
+            {credits.map((p) => (
+              <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+            ))}
+          </div>
+        )}
+        </>
       )}
 
       {/* ── Editar fechas ── */}

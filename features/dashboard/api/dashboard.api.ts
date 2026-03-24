@@ -14,7 +14,7 @@ export type DashboardActivityItem = {
   category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   account: { id: number; name: string; type: string } | null;
   creditCard: { id: number; name: string; brand: string | null; cardLast4: string } | null;
-  installmentInfo: { installmentNumber: number; installmentsCount: number; purchaseId: number; reimbursementAmountCents: number | null; reimbursementAccountId: number | null; reimbursementAt: string | null } | null;
+  installmentInfo: { installmentNumber: number; installmentsCount: number; purchaseId: number; reimbursementAmountCents: number | null; reimbursementAccountId: number | null; reimbursementAt: string | null; isCredit: boolean } | null;
   transferData: {
     id: number;
     fromAccountId: number;
