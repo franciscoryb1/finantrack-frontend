@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 import { resendVerification } from "@/lib/auth";
 import { Mail, RefreshCw, LogOut } from "lucide-react";
@@ -10,6 +11,13 @@ import { toast } from "sonner";
 export function EmailVerificationGate({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const [sending, setSending] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
 
   if (loading || !user) return null;
   if (user.emailVerified) return <>{children}</>;

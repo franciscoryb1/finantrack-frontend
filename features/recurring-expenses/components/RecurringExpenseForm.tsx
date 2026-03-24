@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -32,6 +32,7 @@ import { useCategories } from "@/features/categories/hooks/useCategories";
 type Props = {
   onSubmit: (values: RecurringExpenseFormValues) => Promise<void>;
   defaultValues?: Partial<RecurringExpenseFormValues>;
+  initialParentCategoryId?: number;
   submitLabel?: string;
   formId?: string;
   onDirtyChange?: (dirty: boolean) => void;
@@ -40,6 +41,7 @@ type Props = {
 export function RecurringExpenseForm({
   onSubmit,
   defaultValues,
+  initialParentCategoryId,
   submitLabel = "Guardar",
   formId,
   onDirtyChange,
@@ -69,8 +71,7 @@ export function RecurringExpenseForm({
   const isMonthly = selectedFrequency === "MONTHLY";
   const isWeekly = selectedFrequency === "WEEKLY" || selectedFrequency === "BIWEEKLY";
 
-  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(undefined);
-
+  const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
   const { data: categories } = useCategories("EXPENSE");
   const selectedParent = categories?.find((c) => c.id === parentCategoryId);
   const subCategories = selectedParent?.children ?? [];

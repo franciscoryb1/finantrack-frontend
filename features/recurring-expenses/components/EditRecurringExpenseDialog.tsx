@@ -27,6 +27,10 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const update = useUpdateRecurringExpense();
 
+  const initialParentCategoryId = expense.category?.parent
+    ? expense.category.parent.id
+    : expense.category?.id;
+
   async function handleSubmit(values: RecurringExpenseFormValues) {
     setServerError(null);
     try {
@@ -34,7 +38,7 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
         id: expense.id,
         data: {
           name: values.name,
-          description: values.description || undefined,
+          description: values.description,
           amountCents: Math.round(values.amount * 100),
           dueDay: values.dueDay,
           dueDayOfWeek: values.dueDayOfWeek,
@@ -78,10 +82,11 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
               {serverError}
             </p>
           )}
-          <RecurringExpenseForm
+          {open && <RecurringExpenseForm
             onSubmit={handleSubmit}
             formId="edit-recurring-form"
             onDirtyChange={setIsDirty}
+            initialParentCategoryId={initialParentCategoryId}
             defaultValues={{
               name: expense.name,
               description: expense.description ?? "",
@@ -93,7 +98,7 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
               endDate: expense.endDate ? expense.endDate.split("T")[0] : "",
               categoryId: expense.categoryId ?? undefined,
             }}
-          />
+          />}
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
