@@ -41,16 +41,18 @@ function StatementInfo({ card, ov }: { card: CreditCard; ov: CardOverview | unde
     usedPercent >= 70 ? "bg-amber-500" :
     "bg-emerald-500";
 
+  const statement = ov?.currentPeriodStatement;
+
   return (
     <div className="pt-4 space-y-3">
-      {ov?.openStatement ? (
+      {statement ? (
         <>
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">
-              {MONTHS[ov.openStatement.month - 1]} {ov.openStatement.year}
+              {MONTHS[statement.month - 1]} {statement.year}
             </p>
             <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0 text-[11px] font-medium px-2 h-5">
-              Abierto
+              Período actual
             </Badge>
           </div>
 
@@ -60,7 +62,7 @@ function StatementInfo({ card, ov }: { card: CreditCard; ov: CardOverview | unde
                 Acumulado
               </p>
               <p className="text-xl font-bold tabular-nums">
-                {formatCurrency(ov.openStatementAccumulatedCents)}
+                {formatCurrency(ov!.currentPeriodAccumulatedCents)}
               </p>
             </div>
             <div>
@@ -68,7 +70,7 @@ function StatementInfo({ card, ov }: { card: CreditCard; ov: CardOverview | unde
                 Disponible
               </p>
               <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                {formatCurrency(ov.availableCents)}
+                {formatCurrency(ov!.availableCents)}
               </p>
             </div>
           </div>
@@ -76,17 +78,17 @@ function StatementInfo({ card, ov }: { card: CreditCard; ov: CardOverview | unde
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <p className="text-muted-foreground mb-0.5">Cierre</p>
-              <p className="font-medium">{formatDate(ov.openStatement.closingDate)}</p>
+              <p className="font-medium">{formatDate(statement.closingDate)}</p>
             </div>
             <div>
               <p className="text-muted-foreground mb-0.5">Vencimiento</p>
-              <p className="font-medium">{formatDate(ov.openStatement.dueDate)}</p>
+              <p className="font-medium">{formatDate(statement.dueDate)}</p>
             </div>
           </div>
         </>
       ) : (
         <div className="flex items-center justify-between py-1">
-          <p className="text-sm text-muted-foreground">Sin resumen abierto</p>
+          <p className="text-sm text-muted-foreground">Sin resumen para el período actual</p>
           <div className="text-right">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
               Disponible
@@ -192,7 +194,12 @@ export default function CreditCardsPage() {
                 !card.isActive && "opacity-55",
               )}
             >
-              <CreditCardVisual card={card} backgroundColor={card.backgroundColor ?? ov?.backgroundColor ?? null} />
+              <CreditCardVisual
+                card={card}
+                backgroundColor={card.backgroundColor ?? ov?.backgroundColor ?? null}
+                closingDate={ov?.currentPeriodStatement?.closingDate ?? null}
+                dueDate={ov?.currentPeriodStatement?.dueDate ?? null}
+              />
               <StatementInfo card={card} ov={ov} />
             </Link>
           ))}

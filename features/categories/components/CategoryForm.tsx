@@ -125,7 +125,7 @@ export function CategoryForm({
         />
 
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {submitLabel}
+          {form.formState.isSubmitting ? "Guardando..." : submitLabel}
         </Button>
       </form>
     </Form>

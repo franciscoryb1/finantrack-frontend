@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -88,9 +89,10 @@ type Props = {
   defaultValues?: Partial<CreditCardFormValues>;
   onSubmit: (values: CreditCardFormValues) => Promise<void>;
   formId?: string;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
-export function CreditCardForm({ defaultValues, onSubmit, formId }: Props) {
+export function CreditCardForm({ defaultValues, onSubmit, formId, onDirtyChange }: Props) {
   const { data: accounts } = useBankAccounts();
 
   const form = useForm<CreditCardFormValues>({
@@ -108,6 +110,9 @@ export function CreditCardForm({ defaultValues, onSubmit, formId }: Props) {
       ...defaultValues,
     },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const [watchedName, watchedBrand, watchedLast4, watchedExpM, watchedExpY, watchedColor] =
     useWatch({

@@ -37,6 +37,7 @@ import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useUpdateCreditCardPurchase } from "../hooks/useUpdateCreditCardPurchase";
 import { useDeleteCreditCardPurchase } from "../hooks/useDeleteCreditCardPurchase";
 import { useReassignCreditCardPurchase } from "../hooks/useReassignCreditCardPurchase";
+import { TagPicker } from "@/features/tags/components/TagPicker";
 import type { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
 
 type Props = {
@@ -75,6 +76,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId);
   const [description, setDescription] = useState(item.description ?? "");
+  const [tagIds, setTagIds] = useState<number[]>(item.tags?.map((t) => t.id) ?? []);
   const [creditCardId, setCreditCardId] = useState<number | undefined>(initialCreditCardId);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -112,6 +114,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
     setReimbursementAt(initialReimbursementAt);
     setSharedExpenseEnabled(initialSharedExpenseEnabled);
     setSharedAmountCentsInput(initialSharedAmountCents);
+    setTagIds(item.tags?.map((t) => t.id) ?? []);
   }
 
   async function handleSubmit() {
@@ -175,6 +178,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
             data: {
               categoryId: categoryId ?? null,
               description: description.trim() || null,
+              tagIds,
               ...reimbursementPayload,
               ...sharedPayload,
             },
@@ -186,6 +190,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
           data: {
             categoryId: categoryId ?? null,
             description: description.trim() || null,
+            tagIds,
             ...reimbursementPayload,
             ...sharedPayload,
           },
@@ -328,6 +333,15 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-1.5">
+              <Label>
+                Etiquetas{" "}
+                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+              </Label>
+              <TagPicker value={tagIds} onChange={setTagIds} />
             </div>
 
             {/* Toggle reintegro (siempre visible en columna izquierda) */}

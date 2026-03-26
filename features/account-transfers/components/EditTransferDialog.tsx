@@ -138,7 +138,7 @@ export function EditTransferDialog({ item, open, onOpenChange }: Props) {
               disabled={!isValid || updateTransfer.isPending}
               onClick={handleSubmit}
             >
-              Guardar cambios
+              {updateTransfer.isPending ? "Guardando..." : "Guardar cambios"}
             </Button>
           </div>
         </div>

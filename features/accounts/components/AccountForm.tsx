@@ -29,9 +29,10 @@ const ACCOUNT_TYPES: AccountTypeOption[] = [
 
 type Props = {
   onSubmit: (values: AccountFormValues) => Promise<void>;
+  isPending?: boolean;
 };
 
-export function AccountForm({ onSubmit }: Props) {
+export function AccountForm({ onSubmit, isPending }: Props) {
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
@@ -112,8 +113,8 @@ export function AccountForm({ onSubmit }: Props) {
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Crear cuenta
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Creando..." : "Crear cuenta"}
         </Button>
       </form>
     </Form>

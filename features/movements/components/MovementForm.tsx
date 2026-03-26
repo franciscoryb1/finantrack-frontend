@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -12,7 +12,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,8 @@ type Props = {
   initialParentCategoryId?: number;
   submitLabel?: string;
   formId?: string;
+  onDirtyChange?: (dirty: boolean) => void;
+  hidePaymentMethod?: boolean;
 };
 
 export function MovementForm({
@@ -45,6 +46,8 @@ export function MovementForm({
   initialParentCategoryId,
   submitLabel = "Guardar movimiento",
   formId,
+  onDirtyChange,
+  hidePaymentMethod = false,
 }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const form = useForm<MovementFormValues>({
@@ -70,6 +73,9 @@ export function MovementForm({
       ...defaultValues,
     },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(
     initialParentCategoryId
@@ -334,12 +340,7 @@ export function MovementForm({
                     <span className="text-muted-foreground font-normal">(opcional)</span>
                   </FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Ej: Supermercado, Sueldo…"
-                      rows={3}
-                      className="resize-none"
-                      {...field}
-                    />
+                    <Input placeholder="Ej: Supermercado, Sueldo…" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -378,8 +379,8 @@ export function MovementForm({
             )}
           </div>
 
-          {/* Medio de pago — fila completa, solo EXPENSE */}
-          {isExpense && (
+          {/* Medio de pago — fila completa, solo EXPENSE y no edit */}
+          {isExpense && !hidePaymentMethod && (
             <div className="sm:col-span-3">
               <FormField
                 control={form.control}

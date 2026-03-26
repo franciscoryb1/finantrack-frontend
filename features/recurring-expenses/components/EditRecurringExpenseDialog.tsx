@@ -14,6 +14,7 @@ import { RecurringExpenseForm } from "./RecurringExpenseForm";
 import { useUpdateRecurringExpense } from "../hooks/useUpdateRecurringExpense";
 import { RecurringExpense } from "../api/recurring-expenses.api";
 import { RecurringExpenseFormValues } from "../schemas/recurring-expense.schema";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
 type Props = {
   expense: RecurringExpense;
@@ -22,7 +23,13 @@ type Props = {
 export function EditRecurringExpenseDialog({ expense }: Props) {
   const [open, setOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const update = useUpdateRecurringExpense();
+
+  const initialParentCategoryId = expense.category?.parent
+    ? expense.category.parent.id
+    : expense.category?.id;
 
   async function handleSubmit(values: RecurringExpenseFormValues) {
     setServerError(null);
@@ -31,7 +38,7 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
         id: expense.id,
         data: {
           name: values.name,
-          description: values.description || undefined,
+          description: values.description,
           amountCents: Math.round(values.amount * 100),
           dueDay: values.dueDay,
           dueDayOfWeek: values.dueDayOfWeek,
@@ -44,8 +51,20 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    if (!o) setServerError(null);
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); setOpen(o); }}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setServerError(null); setOpen(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Pencil className="h-3.5 w-3.5" />
@@ -63,9 +82,11 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
               {serverError}
             </p>
           )}
-          <RecurringExpenseForm
+          {open && <RecurringExpenseForm
             onSubmit={handleSubmit}
             formId="edit-recurring-form"
+            onDirtyChange={setIsDirty}
+            initialParentCategoryId={initialParentCategoryId}
             defaultValues={{
               name: expense.name,
               description: expense.description ?? "",
@@ -77,15 +98,16 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
               endDate: expense.endDate ? expense.endDate.split("T")[0] : "",
               categoryId: expense.categoryId ?? undefined,
             }}
-          />
+          />}
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
-          <Button type="submit" form="edit-recurring-form" className="w-full">
-            Guardar cambios
+          <Button type="submit" form="edit-recurring-form" className="w-full" disabled={update.isPending}>
+            {update.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

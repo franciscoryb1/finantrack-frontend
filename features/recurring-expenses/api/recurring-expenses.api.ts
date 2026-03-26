@@ -17,7 +17,7 @@ export type RecurringExpense = {
   categoryId?: number | null;
   isActive: boolean;
   createdAt: string;
-  category?: { id: number; name: string; color?: string | null } | null;
+  category?: { id: number; name: string; color?: string | null; parent?: { id: number; name: string } | null } | null;
   payments?: { dueDate: string; amountCents: number }[];
 };
 

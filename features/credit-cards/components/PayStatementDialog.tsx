@@ -150,12 +150,10 @@ export function PayStatementDialog({
               Cancelar
             </Button>
             <Button
-              disabled={
-                !accountId || !hasEnoughBalance || payMutation.isPending
-              }
+              disabled={!accountId || !hasEnoughBalance || payMutation.isPending}
               onClick={handlePay}
             >
-              Confirmar pago
+              {payMutation.isPending ? "Procesando..." : "Confirmar pago"}
             </Button>
           </div>
         </div>

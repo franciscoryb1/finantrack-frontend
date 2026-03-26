@@ -13,6 +13,7 @@ import { CreditCardForm } from "./CreditCardForm";
 import { useUpdateCreditCard } from "../hooks/useUpdateCreditCard";
 import { CreditCard } from "../api/credit-cards.api";
 import { CreditCardFormValues } from "@/features/credit-cards/schemas/schema";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
 const FORM_ID = "edit-credit-card-form";
 
@@ -22,6 +23,8 @@ type Props = {
 
 export function EditCreditCardDialog({ card }: Props) {
   const [open, setOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const mutation = useUpdateCreditCard(card.id);
 
   async function handleSubmit(values: CreditCardFormValues) {
@@ -44,8 +47,19 @@ export function EditCreditCardDialog({ card }: Props) {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setOpen(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">Editar</Button>
       </DialogTrigger>
@@ -69,6 +83,7 @@ export function EditCreditCardDialog({ card }: Props) {
             }}
             onSubmit={handleSubmit}
             formId={FORM_ID}
+            onDirtyChange={setIsDirty}
           />
         </div>
 
@@ -84,5 +99,6 @@ export function EditCreditCardDialog({ card }: Props) {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

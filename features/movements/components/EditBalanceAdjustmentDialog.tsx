@@ -60,14 +60,14 @@ export function EditBalanceAdjustmentDialog({ item, open, onOpenChange }: Props)
 
     const finalCategoryId =
       categoryId ??
-      (selectedParent && selectedParent.children.length === 0 ? selectedParent.id : null);
+      (selectedParent && selectedParent.children.length === 0 ? selectedParent.id : undefined);
 
     try {
       await updateMovement.mutateAsync({
         id: item.id,
         data: {
           categoryId: finalCategoryId,
-          description: description.trim() || null,
+          description: description.trim() || undefined,
         },
       });
       onOpenChange(false);

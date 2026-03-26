@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,7 +41,18 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   useEffect(() => { document.title = "Iniciar sesión | Finantrack"; }, []);
+
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/";
 
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -106,7 +118,7 @@ export default function LoginPage() {
         }
       }
 
-      window.location.href = "/";
+      window.location.href = redirectTo;
     } catch {
       // Mensaje genérico: no revelar si el email existe o no
       const newAttempts = attempts + 1;
@@ -199,11 +211,7 @@ export default function LoginPage() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>Contraseña</FormLabel>
-                      <Link
-                        href="/forgot-password"
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                        tabIndex={-1}
-                      >
+                      <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
                         ¿Olvidaste tu contraseña?
                       </Link>
                     </div>

@@ -6,6 +6,7 @@ import { me, refresh, logout as logoutApi } from "@/lib/auth";
 type User = {
   userId: number;
   email: string;
+  emailVerified: boolean;
 };
 
 type AuthContextType = {

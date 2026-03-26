@@ -13,11 +13,14 @@ import { useCreateCreditCard } from "../hooks/useCreateCreditCard";
 import { useState } from "react";
 import { CreditCardFormValues } from "@/features/credit-cards/schemas/schema";
 import { Plus } from "lucide-react";
+import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
 const FORM_ID = "create-credit-card-form";
 
 export function CreateCreditCardDialog() {
   const [open, setOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const mutation = useCreateCreditCard();
 
   async function handleSubmit(values: CreditCardFormValues) {
@@ -40,8 +43,19 @@ export function CreateCreditCardDialog() {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o && isDirty) { setConfirmDiscard(true); return; }
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+    <DiscardChangesAlert
+      open={confirmDiscard}
+      onConfirm={() => { setConfirmDiscard(false); setOpen(false); }}
+      onCancel={() => setConfirmDiscard(false)}
+    />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
@@ -55,7 +69,7 @@ export function CreateCreditCardDialog() {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          <CreditCardForm onSubmit={handleSubmit} formId={FORM_ID} />
+          <CreditCardForm onSubmit={handleSubmit} formId={FORM_ID} onDirtyChange={setIsDirty} />
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-5 border-t">
@@ -70,5 +84,6 @@ export function CreateCreditCardDialog() {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

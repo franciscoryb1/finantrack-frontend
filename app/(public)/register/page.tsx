@@ -352,12 +352,20 @@ export default function RegisterPage() {
           </Form>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          ¿Ya tenés cuenta?{" "}
-          <Link href="/login" className="text-primary hover:underline font-medium">
-            Iniciá sesión
-          </Link>
-        </p>
+        <div className="flex flex-col items-center gap-1.5 text-sm text-muted-foreground text-center">
+          <p>
+            ¿Ya tenés cuenta?{" "}
+            <Link href="/login" className="text-primary hover:underline font-medium">
+              Iniciá sesión
+            </Link>
+          </p>
+          <p>
+            ¿Olvidaste tu contraseña?{" "}
+            <Link href="/forgot-password" className="text-primary hover:underline font-medium">
+              Recuperala
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
