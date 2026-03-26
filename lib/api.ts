@@ -5,6 +5,26 @@ type ApiOptions = Omit<RequestInit, "headers"> & {
   headers?: Record<string, string>;
 };
 
+function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("access_token");
+}
+
+function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("refresh_token");
+}
+
+export function setTokens(accessToken: string, refreshToken: string) {
+  localStorage.setItem("access_token", accessToken);
+  localStorage.setItem("refresh_token", refreshToken);
+}
+
+export function clearTokens() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+}
+
 // Promesa compartida para evitar múltiples refreshes simultáneos
 let refreshPromise: Promise<void> | null = null;
 
@@ -13,11 +33,12 @@ async function attemptRefresh(): Promise<void> {
 
   refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  }).then((res) => {
+    body: JSON.stringify({ refresh_token: getRefreshToken() }),
+  }).then(async (res) => {
     if (!res.ok) throw new Error("UNAUTHORIZED");
+    const data = await res.json();
+    setTokens(data.access_token, data.refresh_token);
   }).finally(() => {
     refreshPromise = null;
   });
@@ -30,20 +51,21 @@ export async function apiFetch<T>(
   options: ApiOptions = {},
   _retry = true,
 ): Promise<T> {
+  const token = getAccessToken();
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers ?? {}),
     },
   });
 
-  // Si es 401 y no es el propio endpoint de refresh/logout, intentamos renovar
   if (res.status === 401 && _retry && !path.includes("/auth/refresh") && !path.includes("/auth/logout")) {
     try {
       await attemptRefresh();
-      return apiFetch<T>(path, options, false); // reintento sin retry
+      return apiFetch<T>(path, options, false);
     } catch {
       throw new Error("UNAUTHORIZED");
     }

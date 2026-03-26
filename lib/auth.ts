@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, setTokens, clearTokens } from "./api";
 
 export type MeResponse = {
   user: {
@@ -9,10 +9,12 @@ export type MeResponse = {
 };
 
 export async function login(email: string, password: string) {
-  return apiFetch("/auth/login", {
+  const data = await apiFetch<{ access_token: string; refresh_token: string }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  setTokens(data.access_token, data.refresh_token);
+  return data;
 }
 
 export async function me() {
@@ -29,9 +31,11 @@ export async function refresh() {
 }
 
 export async function logout() {
-  return apiFetch("/auth/logout", {
-    method: "POST",
-  });
+  try {
+    await apiFetch("/auth/logout", { method: "POST" });
+  } finally {
+    clearTokens();
+  }
 }
 
 export async function register(data: {
