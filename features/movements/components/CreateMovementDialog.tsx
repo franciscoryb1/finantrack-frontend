@@ -52,6 +52,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           categoryId: values.categoryId,
           description: values.description || undefined,
           occurredAt,
+          tagIds: values.tagIds?.length ? values.tagIds : undefined,
           ...(values.reimbursementEnabled && values.reimbursementAmount && values.reimbursementAccountId && {
             reimbursementAmountCents: Math.round(values.reimbursementAmount * 100),
             reimbursementAccountId: values.reimbursementAccountId,

@@ -11,6 +11,7 @@ export type CreateCreditCardPurchaseInput = {
   reimbursementAccountId?: number;
   reimbursementAt?: string;
   sharedAmountCents?: number;
+  tagIds?: number[];
 };
 
 export function createCreditCardPurchase(data: CreateCreditCardPurchaseInput) {
@@ -39,6 +40,7 @@ export type UpdateCreditCardPurchaseInput = {
   reimbursementAccountId?: number | null;
   reimbursementAt?: string | null;
   sharedAmountCents?: number | null;
+  tagIds?: number[];
 };
 
 export function deleteCreditCardPurchase(id: number) {

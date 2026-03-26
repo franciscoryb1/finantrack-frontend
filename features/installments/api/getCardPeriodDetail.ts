@@ -25,6 +25,7 @@ export type CardPeriodDetail = {
     installmentsPaid: number;
     installmentsRemaining: number;
     category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
+    tags: { id: number; name: string; color: string | null }[];
     isCredit: boolean;
     installmentForThisPeriod: {
       installmentNumber: number;
