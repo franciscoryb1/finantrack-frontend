@@ -22,15 +22,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function bootstrap() {
+    console.log("[Auth] bootstrap — token:", !!localStorage.getItem("access_token"));
     try {
       const data = await me();
+      console.log("[Auth] me() OK", data.user);
       setUser(data.user);
-    } catch {
+    } catch (err) {
+      console.log("[Auth] me() FAILED", err);
       try {
         await refresh();
         const data = await me();
+        console.log("[Auth] refresh+me() OK", data.user);
         setUser(data.user);
-      } catch {
+      } catch (err2) {
+        console.log("[Auth] refresh FAILED", err2);
         setUser(null);
       }
     } finally {

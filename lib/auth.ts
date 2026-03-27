@@ -18,16 +18,17 @@ export async function login(email: string, password: string) {
 }
 
 export async function me() {
-  return apiFetch<MeResponse>("/auth/me", {
-    method: "GET",
-  });
+  return apiFetch<MeResponse>("/auth/me");
 }
 
 export async function refresh() {
-  return apiFetch("/auth/refresh", {
+  const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
+  const data = await apiFetch<{ access_token: string; refresh_token: string }>("/auth/refresh", {
     method: "POST",
-    body: JSON.stringify({}),
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
+  setTokens(data.access_token, data.refresh_token);
+  return data;
 }
 
 export async function logout() {
@@ -52,15 +53,11 @@ export async function register(data: {
 }
 
 export async function verifyEmail(token: string) {
-  return apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`, {
-    method: "GET",
-  });
+  return apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`);
 }
 
 export async function resendVerification() {
-  return apiFetch("/auth/resend-verification", {
-    method: "POST",
-  });
+  return apiFetch("/auth/resend-verification", { method: "POST" });
 }
 
 export async function forgotPassword(email: string) {
