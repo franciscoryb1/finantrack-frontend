@@ -72,7 +72,7 @@ export function CreateRecurringExpenseDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="p-0 gap-0 sm:max-w-lg max-h-[90vh]">
+      <DialogContent className="p-0 gap-0 sm:max-w-lg flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto">
         <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Nuevo gasto fijo</DialogTitle>
         </DialogHeader>
