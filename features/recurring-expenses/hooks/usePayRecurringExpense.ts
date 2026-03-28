@@ -15,6 +15,8 @@ export function usePayRecurringExpense() {
       queryClient.invalidateQueries({ queryKey: ["movements-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["installments"] });
     },
     onError: (error: Error) => {
       toast.error(error.message);

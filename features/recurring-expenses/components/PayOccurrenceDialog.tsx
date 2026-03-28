@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ import { usePayRecurringExpense } from "../hooks/usePayRecurringExpense";
 import { useUpdateRecurringExpense } from "../hooks/useUpdateRecurringExpense";
 import { RecurringOccurrence } from "../api/recurring-expenses.api";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
+import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { formatCurrency } from "@/lib/utils";
 import { RefreshCcw } from "lucide-react";
 
@@ -32,10 +34,14 @@ type Props = {
 };
 
 type Step = "form" | "confirm-update";
+type PaymentMethod = "account" | "credit_card";
+
+const INSTALLMENTS_OPTIONS = [1, 2, 3, 6, 9, 12, 18, 24];
 
 export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("form");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("account");
   const [amount, setAmount] = useState<number | undefined>(
     occurrence.recurringExpense.amountCents / 100
   );
@@ -43,12 +49,17 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
     new Date().toISOString().split("T")[0]
   );
   const [accountId, setAccountId] = useState<string>("");
+  const [creditCardId, setCreditCardId] = useState<string>("");
+  const [installmentsCount, setInstallmentsCount] = useState<string>("1");
   const [serverError, setServerError] = useState<string | null>(null);
 
   const pay = usePayRecurringExpense();
   const update = useUpdateRecurringExpense();
   const { data: allAccounts } = useAccounts();
+  const { data: allCreditCards } = useCreditCards();
+
   const accounts = (allAccounts ?? []).filter((a) => a.type !== "CREDIT_CARD" && a.isActive);
+  const creditCards = (allCreditCards ?? []).filter((c) => c.isActive);
 
   const estimatedCents = occurrence.recurringExpense.amountCents;
 
@@ -60,20 +71,22 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
     setOpen(o);
   }
 
-  // Validación del formulario antes de confirmar
   function handleFormSubmit() {
     setServerError(null);
     if (!amount || amount <= 0) {
       setServerError("El monto debe ser mayor a 0");
       return;
     }
-    if (!accountId) {
+    if (paymentMethod === "account" && !accountId) {
       setServerError("Seleccioná una cuenta");
+      return;
+    }
+    if (paymentMethod === "credit_card" && !creditCardId) {
+      setServerError("Seleccioná una tarjeta de crédito");
       return;
     }
 
     const amountCents = Math.round(amount * 100);
-    // Si el monto difiere del estimado, preguntar
     if (amountCents !== estimatedCents) {
       setStep("confirm-update");
     } else {
@@ -94,7 +107,12 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
           dueDate: occurrence.dueDate,
           amountCents,
           occurredAt: occurredAtIso,
-          accountId: Number(accountId),
+          ...(paymentMethod === "account"
+            ? { accountId: Number(accountId) }
+            : {
+                creditCardId: Number(creditCardId),
+                installmentsCount: Number(installmentsCount),
+              }),
         },
       });
 
@@ -146,6 +164,17 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
         {/* ── Paso 1: formulario ── */}
         {step === "form" && (
           <div className="space-y-4">
+            {/* Selector de método de pago */}
+            <Tabs value={paymentMethod} onValueChange={(v) => {
+              setPaymentMethod(v as PaymentMethod);
+              setServerError(null);
+            }}>
+              <TabsList className="w-full">
+                <TabsTrigger value="account" className="flex-1">Cuenta</TabsTrigger>
+                <TabsTrigger value="credit_card" className="flex-1">Tarjeta de crédito</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <div className="space-y-1.5">
               <Label htmlFor="pay-amount">Monto real ($)</Label>
               <CurrencyInput
@@ -155,24 +184,63 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="pay-account">Cuenta</Label>
-              <Select value={accountId} onValueChange={setAccountId}>
-                <SelectTrigger id="pay-account" className="w-full">
-                  <SelectValue placeholder="¿De qué cuenta lo pagás?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id.toString()}>
-                      <span>{a.name}</span>
-                      <span className="ml-2 text-muted-foreground text-xs">
-                        {formatCurrency(a.currentBalanceCents)}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {paymentMethod === "account" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="pay-account">Cuenta</Label>
+                <Select value={accountId} onValueChange={setAccountId}>
+                  <SelectTrigger id="pay-account" className="w-full">
+                    <SelectValue placeholder="¿De qué cuenta lo pagás?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id.toString()}>
+                        <span>{a.name}</span>
+                        <span className="ml-2 text-muted-foreground text-xs">
+                          {formatCurrency(a.currentBalanceCents)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pay-card">Tarjeta</Label>
+                  <Select value={creditCardId} onValueChange={setCreditCardId}>
+                    <SelectTrigger id="pay-card" className="w-full">
+                      <SelectValue placeholder="¿Con qué tarjeta?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {creditCards.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.name}
+                          <span className="ml-2 text-muted-foreground text-xs">
+                            ···{c.cardLast4}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="pay-installments">Cuotas</Label>
+                  <Select value={installmentsCount} onValueChange={setInstallmentsCount}>
+                    <SelectTrigger id="pay-installments" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INSTALLMENTS_OPTIONS.map((n) => (
+                        <SelectItem key={n} value={n.toString()}>
+                          {n === 1 ? "1 cuota (sin cuotas)" : `${n} cuotas`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="pay-date">Fecha de pago</Label>

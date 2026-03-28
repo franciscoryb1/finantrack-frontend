@@ -37,9 +37,11 @@ export type RecurringOccurrence = {
   payment?: {
     id: number;
     amountCents: number;
-    movementId: number;
+    movementId?: number | null;
+    creditCardPurchaseId?: number | null;
     createdAt: string;
     accountName?: string;
+    creditCardName?: string;
   };
 };
 
@@ -68,7 +70,9 @@ export type PayRecurringExpenseInput = {
   dueDate: string;
   amountCents: number;
   occurredAt: string;
-  accountId: number;
+  accountId?: number;
+  creditCardId?: number;
+  installmentsCount?: number;
 };
 
 // ── API functions ─────────────────────────────────────────────────────────────

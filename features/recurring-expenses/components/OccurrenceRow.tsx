@@ -52,6 +52,7 @@ export function OccurrenceRow({ occurrence, compact = false }: Props) {
             )}
             {recurringExpense.category && <> · {recurringExpense.category.name}</>}
             {isPaid && payment?.accountName && <> · {payment.accountName}</>}
+            {isPaid && payment?.creditCardName && <> · {payment.creditCardName}</>}
           </p>
         </div>
       </div>
