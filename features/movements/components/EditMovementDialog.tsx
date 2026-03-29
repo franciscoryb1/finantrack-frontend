@@ -98,7 +98,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
       onCancel={() => setConfirmDiscard(false)}
     />
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="p-0 gap-0 max-h-[92svh] sm:max-w-md">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md">
         <DialogHeader className="px-5 pb-3.5 pt-5 border-b shrink-0">
           <DialogTitle>Editar movimiento</DialogTitle>
         </DialogHeader>

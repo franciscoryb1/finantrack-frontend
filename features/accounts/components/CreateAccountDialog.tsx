@@ -39,7 +39,7 @@ export function CreateAccountDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setServerError(null); onOpenChange(o); }}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto">
         <DialogHeader>
           <DialogTitle>Crear cuenta</DialogTitle>
         </DialogHeader>

@@ -84,7 +84,7 @@ export function EditBalanceAdjustmentDialog({ item, open, onOpenChange }: Props)
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Editar ajuste de saldo</DialogTitle>
         </DialogHeader>

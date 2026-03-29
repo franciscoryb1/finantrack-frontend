@@ -142,7 +142,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Registrar pago</DialogTitle>
         </DialogHeader>

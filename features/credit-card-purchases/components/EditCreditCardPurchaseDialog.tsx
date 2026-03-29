@@ -205,7 +205,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className={cn(
-        "p-0 gap-0 max-h-[90vh] sm:max-h-none",
+        "p-0 gap-0 flex flex-col max-h-[90dvh] sm:max-h-none w-[calc(100vw-2rem)] sm:w-auto",
         reimbursementEnabled ? "sm:max-w-2xl" : "sm:max-w-sm"
       )}>
         <DialogHeader className="px-6 pb-4 border-b shrink-0">

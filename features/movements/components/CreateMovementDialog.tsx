@@ -117,7 +117,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
         )}
       </DialogTrigger>
 
-      <DialogContent className="p-0 gap-0 max-h-[92svh] sm:max-w-lg">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-lg">
         <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Nuevo movimiento</DialogTitle>
         </DialogHeader>

@@ -89,7 +89,7 @@ export function CreateTransferDialog({ trigger }: Props) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Nueva transferencia</DialogTitle>
         </DialogHeader>

@@ -79,7 +79,7 @@ export function PayStatementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Pagar resumen</DialogTitle>
         </DialogHeader>

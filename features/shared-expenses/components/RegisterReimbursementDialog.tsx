@@ -108,7 +108,7 @@ export function RegisterReimbursementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar reintegro</DialogTitle>
         </DialogHeader>

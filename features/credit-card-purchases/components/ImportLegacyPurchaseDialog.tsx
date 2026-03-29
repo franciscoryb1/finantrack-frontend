@@ -49,12 +49,14 @@ export function ImportLegacyPurchaseDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="sticky top-0 bg-background z-10 -mx-6 px-6 pb-4 border-b">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-lg">
+        <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Cargar compra en cuotas anterior</DialogTitle>
         </DialogHeader>
 
-        <LegacyPurchaseForm onSubmit={handleSubmit} />
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <LegacyPurchaseForm onSubmit={handleSubmit} />
+        </div>
       </DialogContent>
     </Dialog>
   );

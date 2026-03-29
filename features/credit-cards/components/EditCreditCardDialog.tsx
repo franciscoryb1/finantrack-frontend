@@ -64,7 +64,7 @@ export function EditCreditCardDialog({ card }: Props) {
         <Button variant="outline">Editar</Button>
       </DialogTrigger>
 
-      <DialogContent className="p-0 gap-0 sm:max-w-2xl max-h-[90vh]">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-2xl">
         <DialogHeader className="px-6 pb-4 border-b shrink-0">
           <DialogTitle>Editar tarjeta</DialogTitle>
         </DialogHeader>

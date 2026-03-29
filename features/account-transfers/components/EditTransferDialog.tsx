@@ -70,7 +70,7 @@ export function EditTransferDialog({ item, open, onOpenChange }: Props) {
         onOpenChange(v);
       }}
     >
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Editar transferencia</DialogTitle>
         </DialogHeader>

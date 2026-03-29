@@ -95,7 +95,7 @@ export function AdjustBalanceDialog({ account, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Ajustar saldo — {account.name}</DialogTitle>
         </DialogHeader>
