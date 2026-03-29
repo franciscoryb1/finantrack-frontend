@@ -67,6 +67,7 @@ export default function DashboardPage() {
   const { fromDate, toDate } = getPeriodDates(year, month);
 
   const { data: summary, isLoading: loadingSummary } = useMovementsSummary({ fromDate, toDate });
+  const { data: globalSummary, isLoading: loadingGlobalSummary } = useMovementsSummary({});
   const { data: activity, isLoading: loadingActivity } = useDashboardActivity(year, month);
   const { data: occurrences, isLoading: loadingRecurring } = useRecurringExpenseOccurrences(year, month);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts({ status: "active" });
@@ -195,11 +196,11 @@ export default function DashboardPage() {
   const pendingCount = overdue.length + pending.length;
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
-  const onboardingLoading = loadingAccounts || loadingCategories || loadingSummary;
+  const onboardingLoading = loadingAccounts || loadingCategories || loadingGlobalSummary;
   const hasAccounts = (accounts?.length ?? 0) > 0;
   const hasIncomeCategory = categories?.some(c => c.type === "INCOME" && c.isActive) ?? false;
   const hasExpenseCategory = categories?.some(c => c.type === "EXPENSE" && c.isActive) ?? false;
-  const hasMovements = (summary?.movementsCount ?? 0) > 0;
+  const hasMovements = (globalSummary?.movementsCount ?? 0) > 0;
   const showOnboarding = !onboardingLoading && !(hasAccounts && hasIncomeCategory && hasExpenseCategory && hasMovements);
 
   // ── Render ──────────────────────────────────────────────────────────────────
