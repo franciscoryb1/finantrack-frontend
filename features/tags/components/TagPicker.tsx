@@ -13,10 +13,11 @@ import { useCreateTag } from "../hooks/useCreateTag";
 type Props = {
   value: number[];
   onChange: (ids: number[]) => void;
+  defaultOpen?: boolean;
 };
 
-export function TagPicker({ value, onChange }: Props) {
-  const [open, setOpen] = useState(false);
+export function TagPicker({ value, onChange, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const [search, setSearch] = useState("");
 
   const { data: allTags = [] } = useTags();

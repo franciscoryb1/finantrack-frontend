@@ -319,7 +319,15 @@ export function MovementForm({
                   <SelectContent>
                     {subCategories.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name}
+                        <span className="flex items-center gap-1.5">
+                          {c.color && (
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: c.color }}
+                            />
+                          )}
+                          {c.name}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -370,7 +378,7 @@ export function MovementForm({
                       Etiquetas
                     </FormLabel>
                     <FormControl>
-                      <TagPicker value={field.value ?? []} onChange={field.onChange} />
+                      <TagPicker value={field.value ?? []} onChange={field.onChange} defaultOpen={!defaultValues?.tagIds?.length} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
