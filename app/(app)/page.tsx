@@ -710,7 +710,12 @@ export default function DashboardPage() {
 
       {/* ── 4. Actividad del período ───────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Actividad del período</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Actividad del período</h2>
+          <Link href="/movements" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Ver todos los movimientos →
+          </Link>
+        </div>
         <Tabs defaultValue="movimientos">
           <TabsList className="mb-1">
             <TabsTrigger value="movimientos">Movimientos</TabsTrigger>
