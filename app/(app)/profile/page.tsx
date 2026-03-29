@@ -5,13 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useUpdateProfile } from "@/features/profile/hooks/useUpdateProfile";
-import { useChangePassword } from "@/features/profile/hooks/useChangePassword";
-import {
-  profileSchema,
-  changePasswordSchema,
-  ProfileFormValues,
-  ChangePasswordFormValues,
-} from "@/features/profile/schemas/profile.schema";
+import { profileSchema, ProfileFormValues } from "@/features/profile/schemas/profile.schema";
+import { forgotPassword } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -216,23 +211,19 @@ function ProfileSection() {
 // ── Sección: Cambiar contraseña ───────────────────────────────────────────────
 
 function ChangePasswordSection() {
-  const changePassword = useChangePassword();
+  const { data: profile } = useProfile();
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const form = useForm<ChangePasswordFormValues>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
-
-  async function handleSubmit(values: ChangePasswordFormValues) {
-    await changePassword.mutateAsync({
-      currentPassword: values.currentPassword,
-      newPassword: values.newPassword,
-    });
-    form.reset();
+  async function handleRequest() {
+    if (!profile?.email) return;
+    setLoading(true);
+    try {
+      await forgotPassword(profile.email);
+      setSent(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -244,52 +235,24 @@ function ChangePasswordSection() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="currentPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contraseña actual</FormLabel>
-                  <FormControl>
-                    <Input type="password" autoComplete="current-password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nueva contraseña</FormLabel>
-                  <FormControl>
-                    <Input type="password" autoComplete="new-password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar nueva contraseña</FormLabel>
-                  <FormControl>
-                    <Input type="password" autoComplete="new-password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" size="sm" disabled={changePassword.isPending}>
-              {changePassword.isPending ? "Actualizando..." : "Actualizar contraseña"}
+        {sent ? (
+          <p className="text-sm text-muted-foreground">
+            Te enviamos un email a{" "}
+            <span className="font-medium text-foreground">{profile?.email}</span>{" "}
+            con el link para cambiar tu contraseña.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Te enviaremos un email a{" "}
+              <span className="font-medium text-foreground">{profile?.email}</span>{" "}
+              con un link para establecer una nueva contraseña.
+            </p>
+            <Button size="sm" onClick={handleRequest} disabled={loading || !profile}>
+              {loading ? "Enviando..." : "Enviar email de cambio"}
             </Button>
-          </form>
-        </Form>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
