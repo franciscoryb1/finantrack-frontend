@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { Logo } from "@/components/Logo";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -178,11 +179,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex flex-col h-full gap-1">
 
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-2 py-3 mb-1">
-        <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <span className="text-primary-foreground text-xs font-black tracking-tight">F</span>
-        </div>
-        <span className="font-bold text-base tracking-tight">Finantrack</span>
+      <div className="flex justify-center py-3 mb-1">
+        <Logo variant="side" className="h-12 w-auto" />
       </div>
 
       {/* Nav principal */}
@@ -241,12 +239,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Header mobile */}
       <div className="md:hidden flex items-center justify-between border-b bg-background px-4 py-3 sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-[10px] font-black">F</span>
-          </div>
-          <span className="font-bold text-sm tracking-tight">Finantrack</span>
-        </div>
+        <Logo variant="side" className="h-7 w-auto" />
 
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>

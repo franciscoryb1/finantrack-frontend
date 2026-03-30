@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { forgotPassword } from "@/lib/auth";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,14 +55,9 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm space-y-8">
 
         {/* Brand */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-md">
-            <span className="text-primary-foreground text-xl font-black tracking-tight">F</span>
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Finantrack</h1>
-            <p className="text-sm text-muted-foreground mt-1">Recuperá tu contraseña</p>
-          </div>
+        <div className="flex flex-col items-center gap-2">
+          <Logo variant="top" />
+          <p className="text-sm text-muted-foreground">Recuperá tu contraseña</p>
         </div>
 
         {/* Card */}

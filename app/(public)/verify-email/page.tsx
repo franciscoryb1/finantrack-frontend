@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { verifyEmail } from "@/lib/auth";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
@@ -36,11 +37,8 @@ function VerifyEmailContent() {
       <div className="w-full max-w-sm space-y-8">
 
         {/* Brand */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-md">
-            <span className="text-primary-foreground text-xl font-black tracking-tight">F</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Finantrack</h1>
+        <div className="flex flex-col items-center">
+          <Logo variant="top" />
         </div>
 
         {/* Card */}

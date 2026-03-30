@@ -17,6 +17,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { Logo } from "@/components/Logo";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 // ── Seguridad: rate limiting client-side ──────────────────────────────────────
@@ -139,16 +140,8 @@ function LoginContent() {
       <div className="w-full max-w-sm space-y-8">
 
         {/* Brand */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-md">
-            <span className="text-primary-foreground text-xl font-black tracking-tight">F</span>
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Finantrack</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Ingresá a tu cuenta
-            </p>
-          </div>
+        <div className="flex flex-col items-center">
+          <Logo variant="top" />
         </div>
 
         {/* Card */}
