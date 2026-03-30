@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -29,6 +30,8 @@ import {
   Menu,
   User,
   RefreshCcw,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -88,6 +91,7 @@ function NavItem({
 function UserSection({ onNavigate }: { onNavigate?: () => void }) {
   const { user, logout } = useAuth();
   const { data: profile } = useProfile();
+  const { theme, setTheme } = useTheme();
 
   const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
   const initials = profile?.firstName
@@ -126,6 +130,15 @@ function UserSection({ onNavigate }: { onNavigate?: () => void }) {
           Mi perfil
         </Button>
       </Link>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground px-2"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      >
+        {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+      </Button>
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button
