@@ -119,8 +119,10 @@ export default function RegisterPage() {
       window.location.href = "/";
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      if (message.toLowerCase().includes("email already registered") || message.toLowerCase().includes("already")) {
+      if (message.includes("Email already registered")) {
         form.setError("email", { message: "Este email ya está registrado" });
+      } else if (message.includes("Phone already registered")) {
+        form.setError("phoneNumber", { message: "Este número de teléfono ya está registrado" });
       } else {
         setServerError("Ocurrió un error al crear la cuenta. Intentá de nuevo.");
       }
