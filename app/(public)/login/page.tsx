@@ -50,7 +50,7 @@ export default function LoginPage() {
 }
 
 function LoginContent() {
-  useEffect(() => { document.title = "Iniciar sesión | Finantrack"; }, []);
+  useEffect(() => { document.title = "Finantrack"; }, []);
 
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
