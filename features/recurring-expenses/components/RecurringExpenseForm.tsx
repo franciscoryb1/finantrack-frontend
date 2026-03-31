@@ -103,7 +103,7 @@ export function RecurringExpenseForm({
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <div className="rounded-xl border-2 border-muted-foreground/20 bg-muted/30 px-4 py-3 transition-colors focus-within:border-muted-foreground/40">
+                <div className="rounded-xl border-2 border-muted-foreground/20  px-4 py-3 transition-colors focus-within:border-muted-foreground/40">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                     Monto estimado
                   </p>
@@ -113,7 +113,7 @@ export function RecurringExpenseForm({
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="0,00"
-                      className="text-2xl font-bold bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1"
+                      className="text-2xl font-bold bg-transparent dark:bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1"
                     />
                   </div>
                 </div>
@@ -334,7 +334,15 @@ export function RecurringExpenseForm({
                 <SelectContent>
                   {subCategories.map((c) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.name}
+                      <span className="flex items-center gap-1.5">
+                        {c.color && (
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: c.color }}
+                          />
+                        )}
+                        {c.name}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

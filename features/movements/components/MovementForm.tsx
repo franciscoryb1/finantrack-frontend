@@ -204,8 +204,8 @@ export function MovementForm({
                     <div className={cn(
                       "rounded-xl border-2 px-4 py-3 transition-colors",
                       isExpense
-                        ? "border-red-200 dark:border-red-900 bg-red-50/60 dark:bg-red-950/20"
-                        : "border-green-200 dark:border-green-900 bg-green-50/60 dark:bg-green-950/20"
+                        ? "border-red-600 dark:border-red-900"
+                        : "border-green-600 dark:border-green-900"
                     )}>
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                         Monto
@@ -221,7 +221,7 @@ export function MovementForm({
                           value={field.value}
                           onChange={field.onChange}
                           placeholder="0,00"
-                          className="text-2xl font-bold bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1"
+                          className="text-2xl font-bold bg-transparent dark:bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1"
                         />
                       </div>
                     </div>
