@@ -40,9 +40,12 @@ export function EditRecurringExpenseDialog({ expense }: Props) {
           name: values.name,
           description: values.description,
           amountCents: Math.round(values.amount * 100),
+          frequency: values.frequency,
           dueDay: values.dueDay,
           dueDayOfWeek: values.dueDayOfWeek,
           categoryId: values.categoryId,
+          startDate: values.startDate,
+          endDate: values.endDate || null,
         },
       });
       setOpen(false);

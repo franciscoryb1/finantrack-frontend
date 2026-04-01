@@ -61,9 +61,12 @@ export type UpdateRecurringExpenseInput = {
   name?: string;
   description?: string;
   amountCents?: number;
+  frequency?: RecurringFrequency;
   dueDay?: number;
   dueDayOfWeek?: number;
   categoryId?: number;
+  startDate?: string;
+  endDate?: string | null;
 };
 
 export type PayRecurringExpenseInput = {
