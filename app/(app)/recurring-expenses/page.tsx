@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useRecurringExpenses } from "@/features/recurring-expenses/hooks/useRecurringExpenses";
 import { useRecurringExpenseOccurrences } from "@/features/recurring-expenses/hooks/useRecurringExpenseOccurrences";
@@ -26,6 +27,94 @@ const FREQUENCY_LABEL: Record<RecurringFrequency, string> = {
 };
 
 type OccurrenceStatus = "OVERDUE" | "PENDING" | "PAID";
+
+// ── MultiCheckCombo (string IDs) ──────────────────────────────────────────────
+
+type StrCheckItem = { id: string; label: string };
+
+function MultiCheckCombo({
+  allLabel,
+  items,
+  selected,
+  onChange,
+}: {
+  allLabel: string;
+  items: StrCheckItem[];
+  selected: Set<string> | null;
+  onChange: (next: Set<string> | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const allSelected  = selected === null;
+  const noneSelected = selected !== null && selected.size === 0;
+  const triggerLabel = allSelected
+    ? allLabel
+    : noneSelected
+    ? "Ninguno"
+    : items.filter((i) => selected.has(i.id)).map((i) => i.label).join(", ");
+
+  function toggle(id: string) {
+    const base = selected === null ? new Set(items.map((i) => i.id)) : new Set(selected);
+    if (base.has(id)) {
+      base.delete(id);
+      if (base.size === items.length) { onChange(null); return; }
+    } else {
+      base.add(id);
+      if (base.size === items.length) { onChange(null); return; }
+    }
+    onChange(base);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className={cn(
+          "flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors",
+          allSelected
+            ? "text-muted-foreground border-border hover:border-foreground/50 hover:text-foreground"
+            : "font-medium text-foreground border-foreground",
+        )}>
+          <span className="truncate max-w-40">{triggerLabel}</span>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="p-1 w-44" align="start">
+        <button onClick={() => onChange(null)}
+          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+        >
+          <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+            allSelected ? "bg-primary border-primary text-primary-foreground" : "border-input")}>
+            {allSelected && <Check className="h-3 w-3" />}
+          </span>
+          <span className="font-medium">Todos</span>
+        </button>
+        <button onClick={() => onChange(new Set())}
+          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+        >
+          <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+            noneSelected ? "bg-primary border-primary text-primary-foreground" : "border-input")}>
+            {noneSelected && <Check className="h-3 w-3" />}
+          </span>
+          <span className="font-medium">Ninguno</span>
+        </button>
+        <div className="h-px bg-border my-1" />
+        {items.map((item) => {
+          const checked = allSelected || (!noneSelected && selected!.has(item.id));
+          return (
+            <button key={item.id} onClick={() => toggle(item.id)}
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+            >
+              <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+                checked ? "bg-primary border-primary text-primary-foreground" : "border-input")}>
+                {checked && <Check className="h-3 w-3" />}
+              </span>
+              <span className="truncate flex-1 text-left">{item.label}</span>
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function FilterChip({
   active,
@@ -67,12 +156,12 @@ export default function RecurringExpensesPage() {
 
   // ── Filtros — Vencimientos ─────────────────────────────────────────────────
   const [occSearch,      setOccSearch]      = useState("");
-  const [occStatusFilter, setOccStatusFilter] = useState<OccurrenceStatus | "ALL">("ALL");
+  const [occStatusFilter, setOccStatusFilter] = useState<"ALL" | "PENDING" | "PAID">("ALL");
 
   // ── Filtros — Gastos configurados ──────────────────────────────────────────
   const [expSearch,     setExpSearch]     = useState("");
-  const [expFrequency,  setExpFrequency]  = useState<RecurringFrequency | "ALL">("ALL");
-  const [expActiveOnly, setExpActiveOnly] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+  const [expFrequency,  setExpFrequency]  = useState<Set<RecurringFrequency> | null>(null);
+  const [expActiveOnly, setExpActiveOnly] = useState<Set<"ACTIVE" | "INACTIVE"> | null>(null);
 
   function prevMonth() {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -102,8 +191,10 @@ export default function RecurringExpensesPage() {
 
   const filteredOccurrences = useMemo(() => {
     let items = allOccurrences;
-    if (occStatusFilter !== "ALL") {
-      items = items.filter((o) => o.status === occStatusFilter);
+    if (occStatusFilter === "PENDING") {
+      items = items.filter((o) => o.status === "PENDING" || o.status === "OVERDUE");
+    } else if (occStatusFilter === "PAID") {
+      items = items.filter((o) => o.status === "PAID");
     }
     if (occSearch.trim()) {
       const q = occSearch.toLowerCase();
@@ -120,9 +211,8 @@ export default function RecurringExpensesPage() {
 
   const filteredExpenses = useMemo(() => {
     let items = expenses ?? [];
-    if (expActiveOnly === "ACTIVE")   items = items.filter((e) => e.isActive);
-    if (expActiveOnly === "INACTIVE") items = items.filter((e) => !e.isActive);
-    if (expFrequency !== "ALL")       items = items.filter((e) => e.frequency === expFrequency);
+    if (expActiveOnly !== null) items = items.filter((e) => expActiveOnly.has(e.isActive ? "ACTIVE" : "INACTIVE"));
+    if (expFrequency !== null)  items = items.filter((e) => expFrequency.has(e.frequency));
     if (expSearch.trim()) {
       const q = expSearch.toLowerCase();
       items = items.filter(
@@ -136,7 +226,7 @@ export default function RecurringExpensesPage() {
   }, [expenses, expActiveOnly, expFrequency, expSearch]);
 
   const hasOccFilters = occStatusFilter !== "ALL" || occSearch.trim();
-  const hasExpFilters = expFrequency !== "ALL" || expActiveOnly !== "ALL" || expSearch.trim();
+  const hasExpFilters = expFrequency !== null || expActiveOnly !== null || expSearch.trim();
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -196,21 +286,21 @@ export default function RecurringExpensesPage() {
 
         {/* KPIs del período */}
         {!loadingOccurrences && allOccurrences.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg border bg-card px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pagado</p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(paidTotal)}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} ítem{paid.length !== 1 ? "s" : ""}</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-lg border bg-card px-2.5 py-2.5 sm:px-4 sm:py-3 min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pagado</p>
+              <p className="text-[11px] xs:text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 leading-tight break-all">{formatCurrency(paidTotal)}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{paid.length} ítem{paid.length !== 1 ? "s" : ""}</p>
             </div>
-            <div className="rounded-lg border bg-card px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pendiente</p>
-              <p className={cn("text-lg font-bold", pendingTotal > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>{formatCurrency(pendingTotal)}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{pendingCount} ítem{pendingCount !== 1 ? "s" : ""}</p>
+            <div className="rounded-lg border bg-card px-2.5 py-2.5 sm:px-4 sm:py-3 min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pendiente</p>
+              <p className={cn("text-[11px] xs:text-sm sm:text-lg font-bold leading-tight break-all", pendingTotal > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>{formatCurrency(pendingTotal)}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{pendingCount} ítem{pendingCount !== 1 ? "s" : ""}</p>
             </div>
-            <div className="rounded-lg border bg-card px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total período</p>
-              <p className="text-lg font-bold">{formatCurrency(periodTotal)}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{allOccurrences.length} ítem{allOccurrences.length !== 1 ? "s" : ""}</p>
+            <div className="rounded-lg border bg-card px-2.5 py-2.5 sm:px-4 sm:py-3 min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total</p>
+              <p className="text-[11px] xs:text-sm sm:text-lg font-bold leading-tight break-all">{formatCurrency(periodTotal)}</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{allOccurrences.length} ítem{allOccurrences.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
         )}
@@ -234,21 +324,12 @@ export default function RecurringExpensesPage() {
               <FilterChip active={occStatusFilter === "ALL"} onClick={() => setOccStatusFilter("ALL")}>
                 Todos
               </FilterChip>
-              {overdue.length > 0 && (
-                <FilterChip variant="overdue" active={occStatusFilter === "OVERDUE"} onClick={() => setOccStatusFilter("OVERDUE")}>
-                  Vencidos ({overdue.length})
-                </FilterChip>
-              )}
-              {pending.length > 0 && (
-                <FilterChip variant="pending" active={occStatusFilter === "PENDING"} onClick={() => setOccStatusFilter("PENDING")}>
-                  Pendientes ({pending.length})
-                </FilterChip>
-              )}
-              {paid.length > 0 && (
-                <FilterChip variant="paid" active={occStatusFilter === "PAID"} onClick={() => setOccStatusFilter("PAID")}>
-                  Pagados ({paid.length})
-                </FilterChip>
-              )}
+              <FilterChip variant="pending" active={occStatusFilter === "PENDING"} onClick={() => setOccStatusFilter("PENDING")}>
+                Pendientes{pendingCount > 0 ? ` (${pendingCount})` : ""}
+              </FilterChip>
+              <FilterChip variant="paid" active={occStatusFilter === "PAID"} onClick={() => setOccStatusFilter("PAID")}>
+                Pagados{paid.length > 0 ? ` (${paid.length})` : ""}
+              </FilterChip>
             </div>
           </div>
         )}
@@ -337,30 +418,29 @@ export default function RecurringExpensesPage() {
               />
             </div>
 
-            {/* Chips */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
-              {/* Frecuencia */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide shrink-0">Frecuencia</span>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <FilterChip active={expFrequency === "ALL"} onClick={() => setExpFrequency("ALL")}>Todas</FilterChip>
-                  {(["MONTHLY", "BIWEEKLY", "WEEKLY"] as RecurringFrequency[]).map((f) => (
-                    <FilterChip key={f} active={expFrequency === f} onClick={() => setExpFrequency(f)}>
-                      {FREQUENCY_LABEL[f]}
-                    </FilterChip>
-                  ))}
-                </div>
-              </div>
-
-              {/* Estado */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide shrink-0">Estado</span>
-                <div className="flex items-center gap-1">
-                  <FilterChip active={expActiveOnly === "ALL"}      onClick={() => setExpActiveOnly("ALL")}>Todos</FilterChip>
-                  <FilterChip active={expActiveOnly === "ACTIVE"}   onClick={() => setExpActiveOnly("ACTIVE")}>Activos</FilterChip>
-                  <FilterChip active={expActiveOnly === "INACTIVE"} onClick={() => setExpActiveOnly("INACTIVE")}>Inactivos</FilterChip>
-                </div>
-              </div>
+            {/* Dropdowns */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide shrink-0">Frecuencia</span>
+              <MultiCheckCombo
+                allLabel="Todas"
+                items={[
+                  { id: "MONTHLY",  label: "Mensual" },
+                  { id: "BIWEEKLY", label: "Quincenal" },
+                  { id: "WEEKLY",   label: "Semanal" },
+                ]}
+                selected={expFrequency as Set<string> | null}
+                onChange={(v) => setExpFrequency(v as Set<RecurringFrequency> | null)}
+              />
+              <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide shrink-0 ml-2">Estado</span>
+              <MultiCheckCombo
+                allLabel="Todos"
+                items={[
+                  { id: "ACTIVE",   label: "Activos" },
+                  { id: "INACTIVE", label: "Inactivos" },
+                ]}
+                selected={expActiveOnly as Set<string> | null}
+                onChange={(v) => setExpActiveOnly(v as Set<"ACTIVE" | "INACTIVE"> | null)}
+              />
             </div>
           </div>
         )}
@@ -383,7 +463,7 @@ export default function RecurringExpensesPage() {
           <div className="rounded-lg border bg-card p-6 text-center space-y-1">
             <p className="text-sm text-muted-foreground">Sin resultados para los filtros aplicados.</p>
             <button
-              onClick={() => { setExpSearch(""); setExpFrequency("ALL"); setExpActiveOnly("ALL"); }}
+              onClick={() => { setExpSearch(""); setExpFrequency(null); setExpActiveOnly(null); }}
               className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
             >
               Limpiar filtros
@@ -395,7 +475,7 @@ export default function RecurringExpensesPage() {
               <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
                 <span>{filteredExpenses.length} de {(expenses ?? []).length} gastos</span>
                 <button
-                  onClick={() => { setExpSearch(""); setExpFrequency("ALL"); setExpActiveOnly("ALL"); }}
+                  onClick={() => { setExpSearch(""); setExpFrequency(null); setExpActiveOnly(null); }}
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                 >
                   <X className="h-3 w-3" />
