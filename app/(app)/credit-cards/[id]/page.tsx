@@ -147,7 +147,7 @@ function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProg
             </div>
           </div>
           <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
-            +{formatCurrency(Math.abs(amountCents))}
+            -{formatCurrency(Math.abs(amountCents))}
           </p>
         </div>
       </Card>
