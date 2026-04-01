@@ -11,6 +11,7 @@ import { useRecurringExpenseOccurrences } from "@/features/recurring-expenses/ho
 import { CreateRecurringExpenseDialog } from "@/features/recurring-expenses/components/CreateRecurringExpenseDialog";
 import { RecurringExpenseItem } from "@/features/recurring-expenses/components/RecurringExpenseItem";
 import { OccurrenceRow } from "@/features/recurring-expenses/components/OccurrenceRow";
+import { formatCurrency } from "@/lib/utils";
 import type { RecurringFrequency } from "@/features/recurring-expenses/api/recurring-expenses.api";
 
 const MONTH_NAMES = [
@@ -94,6 +95,10 @@ export default function RecurringExpensesPage() {
   const paid    = (occurrences ?? []).filter((o) => o.status === "PAID");
   const pendingCount  = overdue.length + pending.length;
   const allOccurrences = [...overdue, ...pending, ...paid];
+
+  const paidTotal    = paid.reduce((s, o) => s + (o.payment?.amountCents ?? o.recurringExpense.amountCents), 0);
+  const pendingTotal = [...overdue, ...pending].reduce((s, o) => s + o.recurringExpense.amountCents, 0);
+  const periodTotal  = paidTotal + pendingTotal;
 
   const filteredOccurrences = useMemo(() => {
     let items = allOccurrences;
@@ -188,6 +193,27 @@ export default function RecurringExpensesPage() {
             </span>
           )}
         </div>
+
+        {/* KPIs del período */}
+        {!loadingOccurrences && allOccurrences.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg border bg-card px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pagado</p>
+              <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(paidTotal)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} ítem{paid.length !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="rounded-lg border bg-card px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pendiente</p>
+              <p className={cn("text-lg font-bold", pendingTotal > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>{formatCurrency(pendingTotal)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{pendingCount} ítem{pendingCount !== 1 ? "s" : ""}</p>
+            </div>
+            <div className="rounded-lg border bg-card px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total período</p>
+              <p className="text-lg font-bold">{formatCurrency(periodTotal)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{allOccurrences.length} ítem{allOccurrences.length !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+        )}
 
         {/* Filtros de vencimientos */}
         {!loadingOccurrences && allOccurrences.length > 0 && (

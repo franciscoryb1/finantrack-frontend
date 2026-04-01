@@ -194,6 +194,7 @@ export default function DashboardPage() {
   const paid = (occurrences ?? []).filter(o => o.status === "PAID");
   const sortedOccs = [...overdue, ...pending, ...paid];
   const pendingCount = overdue.length + pending.length;
+  const pendingAmountCents = [...overdue, ...pending].reduce((s, o) => s + o.recurringExpense.amountCents, 0);
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   const onboardingLoading = loadingAccounts || loadingCategories || loadingGlobalSummary;
@@ -668,7 +669,9 @@ export default function DashboardPage() {
                   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                   : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
               )}>
-                {pendingCount > 0 ? `${pendingCount} pendiente${pendingCount > 1 ? "s" : ""}` : "Al día ✓"}
+                {pendingCount > 0
+                  ? `${pendingCount} pendiente${pendingCount > 1 ? "s" : ""} · ${formatCurrency(pendingAmountCents)}`
+                  : "Al día ✓"}
               </span>
             )}
           </div>
