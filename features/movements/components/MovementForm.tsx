@@ -250,7 +250,7 @@ export function MovementForm({
           </div>
 
           {/* Categoría — col 2 (1 col si hay subcat, 2 cols si no) */}
-          <div className={subCategories.length > 0 ? "sm:col-span-1" : "sm:col-span-2"}>
+          <div className={`min-w-0 ${subCategories.length > 0 ? "sm:col-span-1" : "sm:col-span-2"}`}>
             <FormField
               control={form.control}
               name="categoryId"
@@ -297,7 +297,7 @@ export function MovementForm({
 
           {/* Subcategoría — col 3, solo si existe */}
           {subCategories.length > 0 && (
-            <div className="sm:col-span-1">
+            <div className="sm:col-span-1 min-w-0">
               <FormItem>
                 <FormLabel>
                   Subcategoría{" "}
