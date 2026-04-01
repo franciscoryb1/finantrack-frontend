@@ -100,8 +100,8 @@ type MultiCheckComboProps = {
   allLabel: string;
   entityLabel: string;
   items: MultiCheckItem[];
-  selected: Set<number>;
-  onChange: (next: Set<number>) => void;
+  selected: Set<number> | null;
+  onChange: (next: Set<number> | null) => void;
   disabled?: boolean;
   groups?: Record<string, string>;
 };
@@ -117,21 +117,25 @@ function MultiCheckCombo({
 }: MultiCheckComboProps) {
   const [open, setOpen] = useState(false);
 
-  const allSelected = selected.size === 0;
+  const allSelected  = selected === null;
+  const noneSelected = selected !== null && selected.size === 0;
   const triggerLabel = allSelected
     ? allLabel
+    : noneSelected
+    ? `Ninguna`
     : `${selected.size} de ${items.length} ${entityLabel}`;
 
-  function toggleAll() { onChange(new Set()); }
+  function toggleAll()  { onChange(null); }
+  function toggleNone() { onChange(new Set()); }
 
   function toggle(id: number) {
-    const base = selected.size === 0 ? new Set(items.map((i) => i.id)) : new Set(selected);
+    const base = selected === null ? new Set(items.map((i) => i.id)) : new Set(selected);
     if (base.has(id)) {
       base.delete(id);
-      if (base.size === items.length) { onChange(new Set()); return; }
+      if (base.size === items.length) { onChange(null); return; }
     } else {
       base.add(id);
-      if (base.size === items.length) { onChange(new Set()); return; }
+      if (base.size === items.length) { onChange(null); return; }
     }
     onChange(base);
   }
@@ -176,6 +180,18 @@ function MultiCheckCombo({
           </span>
           <span className="font-medium">Todas</span>
         </button>
+        <button
+          onClick={toggleNone}
+          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+        >
+          <span className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+            noneSelected ? "bg-primary border-primary text-primary-foreground" : "border-input",
+          )}>
+            {noneSelected && <Check className="h-3 w-3" />}
+          </span>
+          <span className="font-medium">Ninguna</span>
+        </button>
         <div className="h-px bg-border my-1" />
         {groupedItems
           ? [...groupedItems.entries()].map(([groupKey, groupItems]) => (
@@ -186,7 +202,7 @@ function MultiCheckCombo({
                   </p>
                 )}
                 {groupItems.map((item) => {
-                  const checked = allSelected || selected.has(item.id);
+                  const checked = allSelected || (!noneSelected && selected!.has(item.id));
                   return (
                     <button key={item.id} onClick={() => toggle(item.id)}
                       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
@@ -205,7 +221,7 @@ function MultiCheckCombo({
               </div>
             ))
           : items.map((item) => {
-              const checked = allSelected || selected.has(item.id);
+              const checked = allSelected || (!noneSelected && selected!.has(item.id));
               return (
                 <button key={item.id} onClick={() => toggle(item.id)}
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
@@ -539,12 +555,12 @@ export default function MovementsPage() {
   const [movTypeFilter,       setMovTypeFilter]       = useState<"ALL" | MovementType>("ALL");
   const [movParentId,         setMovParentId]         = useState<number | null>(null);
   const [movChildIds,         setMovChildIds]         = useState<Set<number>>(new Set());
-  const [movAccountIds,       setMovAccountIds]       = useState<Set<number>>(new Set());
-  const [movCardIds,          setMovCardIds]          = useState<Set<number>>(new Set());
+  const [movAccountIds,       setMovAccountIds]       = useState<Set<number> | null>(null);
+  const [movCardIds,          setMovCardIds]          = useState<Set<number> | null>(null);
   const [movSearch,           setMovSearch]           = useState("");
 
   // ── Filtros — Cuotas ───────────────────────────────────────────────────────
-  const [ccCardIds,           setCcCardIds]           = useState<Set<number>>(new Set());
+  const [ccCardIds,           setCcCardIds]           = useState<Set<number> | null>(null);
   const [ccParentId,          setCcParentId]          = useState<number | null>(null);
   const [ccChildIds,          setCcChildIds]          = useState<Set<number>>(new Set());
   const [ccSearch,            setCcSearch]            = useState("");
@@ -657,8 +673,8 @@ export default function MovementsPage() {
     setMovTypeFilter("ALL");
     setMovParentId(null);
     setMovChildIds(new Set());
-    setMovAccountIds(new Set());
-    setMovCardIds(new Set());
+    setMovAccountIds(null);
+    setMovCardIds(null);
     setMovSearch("");
   }
 
@@ -684,7 +700,7 @@ export default function MovementsPage() {
   }
 
   function clearCcFilters() {
-    setCcCardIds(new Set());
+    setCcCardIds(null);
     setCcParentId(null);
     setCcChildIds(new Set());
     setCcSearch("");
@@ -707,13 +723,13 @@ export default function MovementsPage() {
     } else if (movTypeFilter === "EXPENSE") {
       movs = movs.filter((m) => m.type === "EXPENSE");
     }
-    if (movAccountIds.size > 0) {
+    if (movAccountIds !== null) {
       movs = movs.filter((m) => m.account && movAccountIds.has(m.account.id));
     }
 
     // CC 1 cuota: solo gastos, se excluyen si filtro es INCOME
     let singles = movTypeFilter === "INCOME" ? [] : [...ccSingleItems];
-    if (movCardIds.size > 0) {
+    if (movCardIds !== null) {
       singles = singles.filter((i) => i.creditCard && movCardIds.has(i.creditCard.id));
     }
 
@@ -760,7 +776,7 @@ export default function MovementsPage() {
       if (item.kind !== "CREDIT_CARD_INSTALLMENT") return false;
       // Solo compras con más de 1 cuota
       if ((item.installmentInfo?.installmentsCount ?? 1) <= 1) return false;
-      if (ccCardIds.size > 0 && (!item.creditCard || !ccCardIds.has(item.creditCard.id))) return false;
+      if (ccCardIds !== null && (!item.creditCard || !ccCardIds.has(item.creditCard.id))) return false;
       return true;
     });
     items.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
@@ -808,17 +824,21 @@ export default function MovementsPage() {
       label: movParent.name,
       clear: () => { setMovParentId(null); setMovChildIds(new Set()); },
     },
-    movAccountIds.size > 0 && {
-      label: movAccountIds.size === 1
+    movAccountIds !== null && {
+      label: movAccountIds.size === 0
+        ? "Ninguna cuenta"
+        : movAccountIds.size === 1
         ? (selectableAccounts.find((a) => movAccountIds.has(a.id))?.name ?? "Cuenta")
         : `${movAccountIds.size} de ${selectableAccounts.length} cuentas`,
-      clear: () => setMovAccountIds(new Set()),
+      clear: () => setMovAccountIds(null),
     },
-    movCardIds.size > 0 && {
-      label: movCardIds.size === 1
+    movCardIds !== null && {
+      label: movCardIds.size === 0
+        ? "Ninguna tarjeta"
+        : movCardIds.size === 1
         ? (activeCards.find((c) => movCardIds.has(c.id))?.name ?? "Tarjeta")
         : `${movCardIds.size} de ${activeCards.length} tarjetas`,
-      clear: () => setMovCardIds(new Set()),
+      clear: () => setMovCardIds(null),
     },
     movSearch.trim() && {
       label: `"${movSearch.trim()}"`,
@@ -827,11 +847,13 @@ export default function MovementsPage() {
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const ccFilterChips = [
-    ccCardIds.size > 0 && {
-      label: ccCardIds.size === 1
+    ccCardIds !== null && {
+      label: ccCardIds.size === 0
+        ? "Ninguna tarjeta"
+        : ccCardIds.size === 1
         ? (activeCards.find((c) => ccCardIds.has(c.id))?.name ?? "Tarjeta")
         : `${ccCardIds.size} de ${activeCards.length} tarjetas`,
-      clear: () => setCcCardIds(new Set()),
+      clear: () => setCcCardIds(null),
     },
     ccParent && {
       label: ccParent.name,
