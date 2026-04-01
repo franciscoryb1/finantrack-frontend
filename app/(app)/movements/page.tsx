@@ -742,12 +742,11 @@ export default function MovementsPage() {
     let items = allMovItems;
 
     if (movParentId !== null && movParent) {
-      if (movParent.children.length > 0) {
-        const ids = movChildIds.size > 0
-          ? movChildIds
-          : new Set(movParent.children.map((c) => c.id));
-        items = items.filter((i) => ids.has(i.category?.id ?? -1));
+      if (movParent.children.length > 0 && movChildIds.size > 0) {
+        // Subcategorías específicas seleccionadas — solo esas
+        items = items.filter((i) => movChildIds.has(i.category?.id ?? -1));
       } else {
+        // Toda la categoría: padre directo + cualquier subcategoría
         items = items.filter(
           (i) => i.category?.id === movParentId || i.category?.parent?.id === movParentId,
         );
@@ -787,12 +786,11 @@ export default function MovementsPage() {
     let items = allCcItems;
 
     if (ccParentId !== null && ccParent) {
-      if (ccParent.children.length > 0) {
-        const ids = ccChildIds.size > 0
-          ? ccChildIds
-          : new Set(ccParent.children.map((c) => c.id));
-        items = items.filter((i) => ids.has(i.category?.id ?? -1));
+      if (ccParent.children.length > 0 && ccChildIds.size > 0) {
+        // Subcategorías específicas seleccionadas — solo esas
+        items = items.filter((i) => ccChildIds.has(i.category?.id ?? -1));
       } else {
+        // Toda la categoría: padre directo + cualquier subcategoría
         items = items.filter(
           (i) => i.category?.id === ccParentId || i.category?.parent?.id === ccParentId,
         );
