@@ -50,6 +50,7 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
 import { ChevronLeft, Pencil, Power, Lock, CreditCard, ShoppingBag } from "lucide-react";
 import { CreateCreditCardCreditDialog } from "@/features/credit-card-purchases/components/CreateCreditCardCreditDialog";
+import { ImportLegacyPurchaseDialog } from "@/features/credit-card-purchases/components/ImportLegacyPurchaseDialog";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,7 @@ export default function CreditCardDetailPage() {
 
           <div className="flex items-center gap-2 justify-end flex-wrap">
             <CreateCreditCardCreditDialog creditCardId={cardId} />
+            <ImportLegacyPurchaseDialog creditCardId={cardId} />
           </div>
         </div>
 

@@ -12,9 +12,13 @@ import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
 import { LegacyPurchaseForm } from "./LegacyPurchaseForm";
 import { useImportLegacyPurchase } from "../hooks/useImportLegacyPurchase";
-import { LegacyPurchaseFormValues } from "../schemas/legacy-purchase.schema";
+import { LegacyPurchaseFormValues, computePaidInstallments } from "../schemas/legacy-purchase.schema";
 
-export function ImportLegacyPurchaseDialog() {
+type Props = {
+  creditCardId?: number;
+};
+
+export function ImportLegacyPurchaseDialog({ creditCardId }: Props = {}) {
   const [open, setOpen] = useState(false);
   const importLegacy = useImportLegacyPurchase();
 
@@ -22,17 +26,25 @@ export function ImportLegacyPurchaseDialog() {
     const [y, m, d] = values.occurredAt.split("-").map(Number);
     const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
 
+    // "YYYY-MM" → enteros, sin parseo de fecha
+    const [firstYear, firstMonth] = values.firstStatement.split("-").map(Number);
+    const paidInstallmentsCount = computePaidInstallments(
+      firstYear,
+      firstMonth,
+      values.installmentsCount,
+    );
+
     try {
       await importLegacy.mutateAsync({
         creditCardId: values.creditCardId,
         totalAmountCents: Math.round(values.amount * 100),
         installmentsCount: values.installmentsCount,
-        paidInstallmentsCount: values.paidInstallmentsCount,
+        paidInstallmentsCount,
         occurredAt,
         categoryId: values.categoryId,
         description: values.description || undefined,
-        firstStatementYear: values.firstStatementYear,
-        firstStatementMonth: values.firstStatementMonth,
+        firstStatementYear: firstYear,
+        firstStatementMonth: firstMonth,
       });
       setOpen(false);
     } catch {
@@ -55,7 +67,7 @@ export function ImportLegacyPurchaseDialog() {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          <LegacyPurchaseForm onSubmit={handleSubmit} />
+          <LegacyPurchaseForm onSubmit={handleSubmit} creditCardId={creditCardId} />
         </div>
       </DialogContent>
     </Dialog>
