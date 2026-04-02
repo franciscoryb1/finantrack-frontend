@@ -87,3 +87,25 @@ export function reassignCreditCardPurchase(id: number, data: ReassignCardInput) 
     body: JSON.stringify(data),
   });
 }
+
+export type CreditCardPurchaseByDate = {
+  id: number;
+  description: string | null;
+  occurredAt: string;
+  totalAmountCents: number;
+  installmentsCount: number;
+  isCredit: boolean;
+  category: {
+    id: number;
+    name: string;
+    color: string | null;
+    parent: { id: number; name: string; color: string | null } | null;
+  } | null;
+  creditCard: { id: number; name: string; cardLast4: string; brand: string | null } | null;
+};
+
+export function getCreditCardPurchasesByDate(fromDate: string, toDate: string) {
+  return apiFetch<CreditCardPurchaseByDate[]>(
+    `/credit-card-purchases?fromDate=${fromDate}&toDate=${toDate}`
+  );
+}

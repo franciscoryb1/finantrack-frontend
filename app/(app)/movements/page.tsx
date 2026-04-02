@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMovements } from "@/features/movements/hooks/useMovements";
 import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSummary";
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
+import { useCreditCardPurchasesByDate } from "@/features/credit-card-purchases/hooks/useCreditCardPurchasesByDate";
+import { CreditCardPurchaseByDate } from "@/features/credit-card-purchases/api/credit-card-purchases.api";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
@@ -57,6 +59,31 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK:   "Banco / Débito",
   WALLET: "Billetera digital",
 };
+
+function ccPurchaseToActivityItem(p: CreditCardPurchaseByDate): DashboardActivityItem {
+  return {
+    kind: "CREDIT_CARD_INSTALLMENT",
+    id: p.id,
+    type: p.isCredit ? "INCOME" : "EXPENSE",
+    amountCents: p.totalAmountCents,
+    description: p.description,
+    occurredAt: p.occurredAt,
+    purchaseDate: p.occurredAt,
+    registeredAt: p.occurredAt,
+    isRecurring: false,
+    tags: [],
+    account: null,
+    creditCard: p.creditCard,
+    installmentInfo: p.installmentsCount > 1
+      ? { installmentNumber: 1, installmentsCount: p.installmentsCount, purchaseId: p.id, reimbursementAmountCents: null, reimbursementAccountId: null, reimbursementAt: null, isCredit: p.isCredit }
+      : null,
+    transferData: null,
+    sharedExpense: null,
+    incomeSource: null,
+    balanceAdjustmentIncreased: null,
+    category: p.category,
+  };
+}
 
 function toActivityItem(m: Movement): DashboardActivityItem {
   return {
@@ -590,6 +617,7 @@ export default function MovementsPage() {
   const { data: categories  = [] } = useCategories();
   const { data: creditCards = [] } = useCreditCards();
   const { data: dashActivity      } = useDashboardActivity(year, month);
+  const { data: ccPurchases = []  } = useCreditCardPurchasesByDate(fromDate, toDate);
 
   // ── Derived lists ──────────────────────────────────────────────────────────
 
@@ -708,12 +736,11 @@ export default function MovementsPage() {
 
   // ── Items assembly — Movimientos ───────────────────────────────────────────
 
-  // Compras CC de 1 cuota (van en la sección de movimientos)
-  const ccSingleItems = useMemo<DashboardActivityItem[]>(() => {
-    return (dashActivity?.items ?? []).filter(
-      (item) => item.kind === "CREDIT_CARD_INSTALLMENT" && (item.installmentInfo?.installmentsCount ?? 1) === 1,
-    );
-  }, [dashActivity]);
+  // Todas las compras CC por occurredAt (aparecen en movimientos por fecha de compra)
+  const ccPurchaseItems = useMemo<DashboardActivityItem[]>(
+    () => ccPurchases.map(ccPurchaseToActivityItem),
+    [ccPurchases],
+  );
 
   const allMovItems = useMemo<DashboardActivityItem[]>(() => {
     // Movimientos regulares
@@ -727,16 +754,18 @@ export default function MovementsPage() {
       movs = movs.filter((m) => m.account && movAccountIds.has(m.account.id));
     }
 
-    // CC 1 cuota: solo gastos, se excluyen si filtro es INCOME
-    let singles = movTypeFilter === "INCOME" ? [] : [...ccSingleItems];
+    // Compras CC por occurredAt (créditos se excluyen si filtro es EXPENSE, compras si filtro es INCOME)
+    let ccItems = ccPurchaseItems;
+    if (movTypeFilter === "INCOME") ccItems = ccItems.filter((i) => i.type === "INCOME");
+    if (movTypeFilter === "EXPENSE") ccItems = ccItems.filter((i) => i.type === "EXPENSE");
     if (movCardIds !== null) {
-      singles = singles.filter((i) => i.creditCard && movCardIds.has(i.creditCard.id));
+      ccItems = ccItems.filter((i) => i.creditCard && movCardIds.has(i.creditCard.id));
     }
 
-    const combined = [...movs, ...singles];
+    const combined = [...movs, ...ccItems];
     combined.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
     return combined;
-  }, [movementsData, ccSingleItems, movTypeFilter, movAccountIds, movCardIds]);
+  }, [movementsData, ccPurchaseItems, movTypeFilter, movAccountIds, movCardIds]);
 
   const filteredMovItems = useMemo(() => {
     let items = allMovItems;
