@@ -52,36 +52,10 @@ function todayISO() {
   return `${y}-${m}-${d}`;
 }
 
-/** "yyyy-MM-dd" → "dd/MM/yyyy" */
-function isoToDisplay(iso: string): string {
-  if (!iso || iso.length < 10) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-/** "dd/MM/yyyy" → "yyyy-MM-dd" (vacío si incompleto) */
-function displayToISO(display: string): string {
-  const digits = display.replace(/\D/g, "");
-  if (digits.length < 8) return "";
-  const d = digits.slice(0, 2);
-  const m = digits.slice(2, 4);
-  const y = digits.slice(4, 8);
-  return `${y}-${m}-${d}`;
-}
-
-/** Aplica la máscara dd/MM/yyyy mientras el usuario escribe */
-function applyDateMask(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-}
-
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export function CreateCreditCardCreditDialog({ creditCardId }: { creditCardId: number }) {
   const [open, setOpen] = useState(false);
-  const [displayDate, setDisplayDate] = useState(isoToDisplay(todayISO()));
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(undefined);
 
   const createCredit = useCreateCreditCardCredit();
@@ -102,17 +76,8 @@ export function CreateCreditCardCreditDialog({ creditCardId }: { creditCardId: n
 
   const watchedCategoryId = form.watch("categoryId");
 
-  function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const masked = applyDateMask(e.target.value);
-    setDisplayDate(masked);
-    const iso = displayToISO(masked);
-    if (iso) form.setValue("occurredAt", iso, { shouldValidate: true });
-  }
-
   function resetForm() {
-    const today = todayISO();
-    form.reset({ amount: undefined, description: "", occurredAt: today, categoryId: undefined });
-    setDisplayDate(isoToDisplay(today));
+    form.reset({ amount: undefined, description: "", occurredAt: todayISO(), categoryId: undefined });
     setParentCategoryId(undefined);
   }
 
@@ -190,20 +155,15 @@ export function CreateCreditCardCreditDialog({ creditCardId }: { creditCardId: n
               )}
             />
 
-            {/* Fecha dd/MM/yyyy */}
+            {/* Fecha */}
             <FormField
               control={form.control}
               name="occurredAt"
-              render={() => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Fecha</FormLabel>
                   <FormControl>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="dd/MM/aaaa"
-                      value={displayDate}
-                      onChange={handleDateChange}
-                    />
+                    <Input type="date" className="w-full" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
