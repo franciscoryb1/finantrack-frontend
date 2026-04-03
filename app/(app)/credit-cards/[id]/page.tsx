@@ -48,9 +48,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
-import { ChevronLeft, Pencil, Power, Lock, CreditCard, ShoppingBag } from "lucide-react";
+import { ChevronLeft, Pencil, Power, Lock, CreditCard, ShoppingBag, Plus, Trash2 } from "lucide-react";
 import { CreateCreditCardCreditDialog } from "@/features/credit-card-purchases/components/CreateCreditCardCreditDialog";
 import { ImportLegacyPurchaseDialog } from "@/features/credit-card-purchases/components/ImportLegacyPurchaseDialog";
+import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/components/EditCreditCardPurchaseDialog";
+import type { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
+import { useAddStatementExtra, useRemoveStatementExtra } from "@/features/credit-cards/hooks/useStatementExtras";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import type { StatementExtra } from "@/features/installments/api/getCardPeriodDetail";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -114,11 +119,12 @@ type Purchase = {
   totalAmountCents: number;
   installmentsCount: number;
   isCredit: boolean;
-  category: { id: number; name: string; parent: { id: number; name: string } | null } | null;
+  category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
+  tags: { id: number; name: string; color: string | null }[];
   installmentForThisPeriod: { installmentNumber: number; amountCents: number; status: string };
 };
 
-function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProgress: boolean }) {
+function PurchaseCard({ purchase, showProgress, onEdit, editDisabled }: { purchase: Purchase; showProgress: boolean; onEdit: () => void; editDisabled?: boolean }) {
   const { installmentNumber, amountCents, status } = purchase.installmentForThisPeriod;
   const progressPercent = Math.round((installmentNumber / purchase.installmentsCount) * 100);
 
@@ -147,9 +153,16 @@ function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProg
               )}
             </div>
           </div>
-          <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
-            -{formatCurrency(Math.abs(amountCents))}
-          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+              -{formatCurrency(Math.abs(amountCents))}
+            </p>
+            {!editDisabled && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onEdit}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
     );
@@ -180,8 +193,15 @@ function PurchaseCard({ purchase, showProgress }: { purchase: Purchase; showProg
             )}
           </div>
         </div>
-        <div className="shrink-0 text-right space-y-1.5">
-          <p className="font-bold text-sm tabular-nums">{formatCurrency(amountCents)}</p>
+        <div className="shrink-0 text-right space-y-1.5 flex flex-col items-end">
+          <div className="flex items-center gap-1">
+            <p className="font-bold text-sm tabular-nums">{formatCurrency(amountCents)}</p>
+            {!editDisabled && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={onEdit}>
+                <Pencil className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
           <InstallmentStatusBadge status={status} />
         </div>
       </div>
@@ -215,6 +235,7 @@ function EmptyTab({ message }: { message: string }) {
 type StatementCardProps = {
   data: CardPeriodDetail;
   totalToPay: number;
+  extras: StatementExtra[];
   installments: Purchase[];
   consumptions: Purchase[];
   onEditDates: () => void;
@@ -222,7 +243,7 @@ type StatementCardProps = {
   onPay: () => void;
 };
 
-function StatementCard({ data, totalToPay, consumptions, installments, onEditDates, onClose, onPay }: StatementCardProps) {
+function StatementCard({ data, totalToPay, extras, consumptions, installments, onEditDates, onClose, onPay }: StatementCardProps) {
   const { period } = data;
   const isPaid = period.status === "PAID";
   const isClosed = period.status === "CLOSED" || isPaid;
@@ -230,12 +251,18 @@ function StatementCard({ data, totalToPay, consumptions, installments, onEditDat
   return (
     <div className="h-full min-h-[180px] rounded-2xl border bg-card p-5 flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-base">
-            {MONTHS[period.month - 1]} {period.year}
-          </p>
-          <StatementStatusBadge status={period.status} />
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="font-semibold text-base">
+              {MONTHS[period.month - 1]} {period.year}
+            </p>
+            <StatementStatusBadge status={period.status} />
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span><span className="uppercase tracking-widest text-[10px]">Cierre</span> <span className="font-medium text-foreground">{formatDate(period.closingDate)}</span></span>
+            <span><span className="uppercase tracking-widest text-[10px]">Vence</span> <span className="font-medium text-foreground">{formatDate(period.dueDate)}</span></span>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {!isClosed && (
@@ -260,21 +287,57 @@ function StatementCard({ data, totalToPay, consumptions, installments, onEditDat
 
       {/* Total */}
       <div>
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Total a pagar</p>
-        <p className="text-3xl font-bold tabular-nums">{formatCurrency(totalToPay)}</p>
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
+          {isPaid ? "Total pagado" : "Total a pagar"}
+        </p>
+        <p className="text-3xl font-bold tabular-nums">
+          {formatCurrency(isPaid && data.payment ? data.payment.amountCents : totalToPay)}
+        </p>
+        {/* Desglose */}
+        {isClosed && (extras.length > 0 || installments.length > 0 || consumptions.length > 0) && (() => {
+          const installmentsTotal = installments.reduce((s, p) => s + p.installmentForThisPeriod.amountCents, 0);
+          const consumptionsTotal = consumptions.reduce((s, p) => s + p.installmentForThisPeriod.amountCents, 0);
+          return (
+            <div className="mt-2 space-y-0.5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Desglose</p>
+              {installmentsTotal > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Cuotas</span>
+                  <span className="tabular-nums">{formatCurrency(installmentsTotal)}</span>
+                </div>
+              )}
+              {consumptionsTotal > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Movimientos</span>
+                  <span className="tabular-nums">{formatCurrency(consumptionsTotal)}</span>
+                </div>
+              )}
+              {extras.map((e) => (
+                <div key={e.id} className="flex justify-between text-xs text-muted-foreground">
+                  <span className="truncate max-w-[70%]">{e.description}</span>
+                  <span className={`tabular-nums ${e.amountCents < 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                    {e.amountCents < 0 ? "-" : "+"}{formatCurrency(Math.abs(e.amountCents))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Dates */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Cierre</p>
-          <p className="font-medium">{formatDate(period.closingDate)}</p>
+      {/* Pago realizado */}
+      {isPaid && data.payment && (
+        <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2.5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Pago debitado</p>
+            <p className="text-sm font-medium truncate">{data.payment.account.name}</p>
+            <p className="text-xs text-muted-foreground">{formatDate(data.payment.paidAt)}</p>
+          </div>
+          <p className="text-base font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+            -{formatCurrency(data.payment.amountCents)}
+          </p>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Vencimiento</p>
-          <p className="font-medium">{formatDate(period.dueDate)}</p>
-        </div>
-      </div>
+      )}
 
       {/* Counts */}
       <div className="mt-auto flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t">
@@ -311,9 +374,14 @@ export default function CreditCardDetailPage() {
   const [editDatesOpen, setEditDatesOpen] = useState(false);
   const [draftClosing, setDraftClosing] = useState("");
   const [draftDue, setDraftDue] = useState("");
+  const [newExtraDesc, setNewExtraDesc] = useState("");
+  const [newExtraAmount, setNewExtraAmount] = useState<number | undefined>(undefined);
+  const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
 
   const updateDates = useUpdateStatementDates(cardId);
   const closeStatement = useCloseStatement(cardId);
+  const addExtra = useAddStatementExtra(cardId);
+  const removeExtra = useRemoveStatementExtra(cardId);
   const { data: cards } = useCreditCards();
   const card = cards?.find((c) => c.id === cardId);
   const toggle = useToggleCreditCard(cardId);
@@ -346,9 +414,44 @@ export default function CreditCardDetailPage() {
   const installments = sortedPurchases.filter((p) => !p.isCredit && p.installmentsCount > 1);
   const consumptions = sortedPurchases.filter((p) => !p.isCredit && p.installmentsCount === 1);
 
+  const extras = data?.extras ?? [];
+  const extrasTotalCents = extras.reduce((sum, e) => sum + e.amountCents, 0);
   const totalToPay = sortedPurchases.reduce(
     (sum, p) => sum + p.installmentForThisPeriod.amountCents, 0,
-  );
+  ) + extrasTotalCents;
+
+  function purchaseToActivityItem(purchase: Purchase): DashboardActivityItem {
+    return {
+      kind: "CREDIT_CARD_INSTALLMENT",
+      id: purchase.purchaseId,
+      description: purchase.description,
+      occurredAt: purchase.occurredAt,
+      purchaseDate: purchase.occurredAt,
+      registeredAt: purchase.occurredAt,
+      amountCents: purchase.installmentForThisPeriod.amountCents,
+      type: purchase.isCredit ? "INCOME" : "EXPENSE",
+      isRecurring: false,
+      tags: purchase.tags,
+      category: purchase.category,
+      account: null,
+      creditCard: data
+        ? { id: data.card.id, name: data.card.name, brand: card?.brand ?? null, cardLast4: card?.cardLast4 ?? "" }
+        : null,
+      installmentInfo: {
+        purchaseId: purchase.purchaseId,
+        installmentNumber: purchase.installmentForThisPeriod.installmentNumber,
+        installmentsCount: purchase.installmentsCount,
+        reimbursementAmountCents: null,
+        reimbursementAccountId: null,
+        reimbursementAt: null,
+        isCredit: purchase.isCredit,
+      },
+      transferData: null,
+      sharedExpense: null,
+      incomeSource: null,
+      balanceAdjustmentIncreased: null,
+    };
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -377,7 +480,7 @@ export default function CreditCardDetailPage() {
             <CreateMovementDialog
               label="Nueva compra"
               initialValues={{ type: "EXPENSE", paymentMethod: "CREDIT_CARD", creditCardId: cardId, installmentsCount: 1 }}
-            />  
+            />
             {card && <EditCreditCardDialog card={card} />}
             <Button
               variant="outline"
@@ -391,8 +494,8 @@ export default function CreditCardDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 justify-end flex-wrap">
-            <CreateCreditCardCreditDialog creditCardId={cardId} />
             <ImportLegacyPurchaseDialog creditCardId={cardId} />
+            <CreateCreditCardCreditDialog creditCardId={cardId} />
           </div>
         </div>
 
@@ -440,6 +543,7 @@ export default function CreditCardDetailPage() {
               <StatementCard
                 data={data}
                 totalToPay={totalToPay}
+                extras={extras}
                 installments={installments}
                 consumptions={consumptions}
                 onEditDates={() => {
@@ -481,7 +585,7 @@ export default function CreditCardDetailPage() {
               <EmptyTab message="No hay consumos en este resumen." />
             ) : (
               consumptions.map((p) => (
-                <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+                <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} onEdit={() => setEditingPurchase(p)} editDisabled={data.period.status === "PAID"} />
               ))
             )}
           </TabsContent>
@@ -491,7 +595,7 @@ export default function CreditCardDetailPage() {
               <EmptyTab message="No hay cuotas en este resumen." />
             ) : (
               installments.map((p) => (
-                <PurchaseCard key={p.purchaseId} purchase={p} showProgress />
+                <PurchaseCard key={p.purchaseId} purchase={p} showProgress onEdit={() => setEditingPurchase(p)} editDisabled={data.period.status === "PAID"} />
               ))
             )}
           </TabsContent>
@@ -501,8 +605,86 @@ export default function CreditCardDetailPage() {
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">Devoluciones</h3>
             {credits.map((p) => (
-              <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} />
+              <PurchaseCard key={p.purchaseId} purchase={p} showProgress={false} onEdit={() => setEditingPurchase(p)} editDisabled={data.period.status === "PAID"} />
             ))}
+          </div>
+        )}
+
+        {/* ── Conceptos extras (solo cuando CLOSED y no PAID) ── */}
+        {data.period.status === "CLOSED" && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Conceptos adicionales</h3>
+
+            {extras.length > 0 && (
+              <div className="rounded-lg border divide-y">
+                {extras.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <span className="text-sm truncate flex-1">{e.description}</span>
+                    <span className={cn(
+                      "text-sm tabular-nums shrink-0",
+                      e.amountCents < 0 ? "text-emerald-600 dark:text-emerald-400" : ""
+                    )}>
+                      {e.amountCents < 0 ? "-" : "+"}{formatCurrency(Math.abs(e.amountCents))}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      disabled={removeExtra.isPending}
+                      onClick={() => removeExtra.mutate({ statementId: data.period.id, extraId: e.id })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulario para agregar */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="extra-desc" className="text-xs">Descripción</Label>
+                <Input
+                  id="extra-desc"
+                  placeholder="Ej: Intereses por pago fuera de término"
+                  value={newExtraDesc}
+                  onChange={(e) => setNewExtraDesc(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="w-36 space-y-1.5">
+                <Label htmlFor="extra-amount" className="text-xs">Monto</Label>
+                <CurrencyInput
+                  id="extra-amount"
+                  placeholder="0,00"
+                  value={newExtraAmount}
+                  onChange={(v) => setNewExtraAmount(v)}
+                  allowNegative
+                  className="h-9"
+                />
+              </div>
+              <Button
+                size="sm"
+                className="h-9 gap-1.5 shrink-0"
+                disabled={!newExtraDesc.trim() || !newExtraAmount || addExtra.isPending}
+                onClick={async () => {
+                  if (!newExtraAmount) return;
+                  const amountCents = Math.round(newExtraAmount * 100);
+                  if (!amountCents) return;
+                  try {
+                    await addExtra.mutateAsync({
+                      statementId: data.period.id,
+                      data: { description: newExtraDesc.trim(), amountCents },
+                    });
+                    setNewExtraDesc("");
+                    setNewExtraAmount(undefined);
+                  } catch { /* toast shown by hook */ }
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Agregar
+              </Button>
+            </div>
           </div>
         )}
         </>
@@ -563,7 +745,11 @@ export default function CreditCardDetailPage() {
           onOpenChange={setPayStatementOpen}
           statementId={data.period.id}
           totalCents={data.period.totalCents}
+          extras={extras}
           cardId={cardId}
+          cardName={data.card.name}
+          periodYear={data.period.year}
+          periodMonth={data.period.month}
         />
       )}
 
@@ -586,6 +772,15 @@ export default function CreditCardDetailPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      )}
+
+      {/* ── Editar compra ── */}
+      {editingPurchase && (
+        <EditCreditCardPurchaseDialog
+          item={purchaseToActivityItem(editingPurchase)}
+          open={!!editingPurchase}
+          onOpenChange={(o) => { if (!o) setEditingPurchase(null); }}
+        />
       )}
 
       {/* ── Toggle tarjeta ── */}

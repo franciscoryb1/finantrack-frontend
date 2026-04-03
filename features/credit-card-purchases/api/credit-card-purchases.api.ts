@@ -34,6 +34,8 @@ export type ImportLegacyPurchaseInput = {
 };
 
 export type UpdateCreditCardPurchaseInput = {
+  totalAmountCents?: number;
+  installmentsCount?: number;
   categoryId?: number | null;
   description?: string | null;
   reimbursementAmountCents?: number | null;

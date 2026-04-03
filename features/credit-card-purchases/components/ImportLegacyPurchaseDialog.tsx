@@ -55,7 +55,7 @@ export function ImportLegacyPurchaseDialog({ creditCardId }: Props = {}) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size="sm">
           <History className="h-4 w-4 mr-1" />
           Cuotas anteriores
         </Button>

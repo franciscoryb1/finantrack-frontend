@@ -58,6 +58,10 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
     : item.category?.id;
   const initialCategoryId = item.category?.id;
   const initialCreditCardId = item.creditCard?.id;
+  const isCredit = item.installmentInfo?.isCredit ?? false;
+
+  const initialTotalAmount = Math.abs(item.amountCents * item.installmentInfo!.installmentsCount) / 100;
+  const initialInstallmentsCount = item.installmentInfo!.installmentsCount;
 
   // Reintegro inicial desde installmentInfo
   const initialReimbursementEnabled = !!(item.installmentInfo?.reimbursementAmountCents);
@@ -74,6 +78,8 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
     ? item.sharedExpense.sharedAmountCents / 100
     : undefined;
 
+  const [totalAmount, setTotalAmount] = useState<number | undefined>(initialTotalAmount);
+  const [installmentsCount, setInstallmentsCount] = useState<number>(initialInstallmentsCount);
   const [parentCategoryId, setParentCategoryId] = useState<number | undefined>(initialParentCategoryId);
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId);
   const [description, setDescription] = useState(item.description ?? "");
@@ -112,6 +118,8 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
   }, [categories, parentCategoryId]);
 
   function reset() {
+    setTotalAmount(initialTotalAmount);
+    setInstallmentsCount(initialInstallmentsCount);
     setParentCategoryId(initialParentCategoryId);
     setCategoryId(initialCategoryId);
     setDescription(item.description ?? "");
@@ -175,28 +183,34 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
       }
     }
 
+    const newTotalCents = totalAmount !== undefined ? Math.round(totalAmount * 100) : undefined;
+    const totalChanged = newTotalCents !== undefined && newTotalCents !== Math.abs(item.amountCents * item.installmentInfo!.installmentsCount);
+    const installmentsChanged = installmentsCount !== initialInstallmentsCount;
+
     try {
       if (cardChanged) {
         await reassign.mutateAsync({
           id: purchaseId,
           data: { creditCardId: creditCardId! },
         });
-        if (categoryId !== initialCategoryId || description.trim() !== (item.description ?? "") || Object.keys(reimbursementPayload).length > 0 || Object.keys(sharedPayload).length > 0) {
-          await update.mutateAsync({
-            id: purchaseId,
-            data: {
-              categoryId: categoryId ?? null,
-              description: description.trim() || null,
-              tagIds,
-              ...reimbursementPayload,
-              ...sharedPayload,
-            },
-          });
-        }
+        await update.mutateAsync({
+          id: purchaseId,
+          data: {
+            ...(totalChanged && { totalAmountCents: newTotalCents }),
+            ...(installmentsChanged && { installmentsCount }),
+            categoryId: categoryId ?? null,
+            description: description.trim() || null,
+            tagIds,
+            ...reimbursementPayload,
+            ...sharedPayload,
+          },
+        });
       } else {
         await update.mutateAsync({
           id: purchaseId,
           data: {
+            ...(totalChanged && { totalAmountCents: newTotalCents }),
+            ...(installmentsChanged && { installmentsCount }),
             categoryId: categoryId ?? null,
             description: description.trim() || null,
             tagIds,
@@ -225,24 +239,29 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
           <div className={cn(reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
             {/* Columna izquierda: campos principales */}
             <div className={cn("space-y-4", reimbursementEnabled && "sm:flex-1")}>
-              {/* Info de la compra (read-only) */}
-              <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm space-y-0.5">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-medium tabular-nums">
-                    {formatCurrency(item.amountCents * item.installmentInfo!.installmentsCount)}
-                  </span>
+              {/* Monto y cuotas editables */}
+              <div className={cn("grid gap-3", !isCredit && "grid-cols-2")}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-total-amount">
+                    {isCredit ? "Monto" : "Total"}
+                  </Label>
+                  <CurrencyInput
+                    id="edit-total-amount"
+                    value={totalAmount}
+                    onChange={setTotalAmount}
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cuotas</span>
-                  <span className="font-medium">{item.installmentInfo!.installmentsCount}</span>
-                </div>
-                {item.installmentInfo?.reimbursementAmountCents && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Reintegro</span>
-                    <span className="font-medium text-green-600 tabular-nums">
-                      +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
-                    </span>
+                {!isCredit && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-installments">Cuotas</Label>
+                    <Input
+                      id="edit-installments"
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={installmentsCount}
+                      onChange={(e) => setInstallmentsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    />
                   </div>
                 )}
               </div>

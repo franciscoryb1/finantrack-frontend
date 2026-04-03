@@ -12,6 +12,8 @@ export function useReassignCreditCardPurchase() {
       toast.success("Tarjeta actualizada");
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
       queryClient.invalidateQueries({ queryKey: ["installments-overview"] });
+      queryClient.invalidateQueries({ queryKey: ["card-period"] });
+      queryClient.invalidateQueries({ queryKey: ["card-periods"] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
