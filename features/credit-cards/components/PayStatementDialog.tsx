@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +30,23 @@ import {
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { usePayStatement } from "../hooks/usePayStatement";
 import { formatCurrency } from "@/lib/utils";
+import type { StatementExtra } from "@/features/installments/api/getCardPeriodDetail";
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   statementId: number;
   totalCents: number;
+  extras: StatementExtra[];
   cardId: number;
+  cardName: string;
+  periodYear: number;
+  periodMonth: number;
 };
 
 export function PayStatementDialog({
@@ -34,13 +54,19 @@ export function PayStatementDialog({
   onOpenChange,
   statementId,
   totalCents,
+  extras,
   cardId,
+  cardName,
+  periodYear,
+  periodMonth,
 }: Props) {
   const today = new Date().toISOString().slice(0, 10);
+  const defaultDescription = `Pago ${cardName} - ${MONTHS[periodMonth - 1]} ${periodYear}`;
 
   const [accountId, setAccountId] = useState("");
   const [paidAt, setPaidAt] = useState(today);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(defaultDescription);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: accounts } = useAccounts({ status: "active" });
   const payMutation = usePayStatement(cardId);
@@ -49,46 +75,70 @@ export function PayStatementDialog({
     (a) => a.type === "CASH" || a.type === "BANK" || a.type === "WALLET"
   );
 
-  const selectedAccount = payableAccounts.find(
-    (a) => a.id === Number(accountId)
-  );
+  const extrasTotalCents = extras.reduce((sum, e) => sum + e.amountCents, 0);
+  const grandTotalCents = totalCents + extrasTotalCents;
 
-  const hasEnoughBalance =
-    !selectedAccount ||
-    selectedAccount.currentBalanceCents >= totalCents;
+  const selectedAccount = payableAccounts.find((a) => a.id === Number(accountId));
+  const hasEnoughBalance = !selectedAccount || selectedAccount.currentBalanceCents >= grandTotalCents;
+
+  function reset() {
+    setAccountId("");
+    setPaidAt(today);
+    setDescription(defaultDescription);
+  }
+
+  const canPay = !!accountId && hasEnoughBalance && grandTotalCents > 0;
 
   const handlePay = async () => {
-    if (!accountId) return;
+    if (!canPay) return;
     try {
       await payMutation.mutateAsync({
         statementId,
         accountId: Number(accountId),
-        paidAt: paidAt
-          ? new Date(paidAt + "T12:00:00").toISOString()
-          : undefined,
+        paidAt: new Date(paidAt + "T12:00:00").toISOString(),
         description: description.trim() || undefined,
       });
+      setConfirmOpen(false);
       onOpenChange(false);
-      setAccountId("");
-      setPaidAt(today);
-      setDescription("");
+      reset();
     } catch {
       // error shown by hook
     }
   };
 
+  function handleOpenChange(o: boolean) {
+    if (!o) reset();
+    onOpenChange(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] sm:w-auto sm:max-w-sm">
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-[672px]">
         <DialogHeader>
           <DialogTitle>Pagar resumen</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-1">
-          {/* Total */}
-          <div className="rounded-lg bg-muted p-3 text-center">
-            <p className="text-xs text-muted-foreground mb-0.5">Total a pagar</p>
-            <p className="text-2xl font-bold">{formatCurrency(totalCents)}</p>
+
+          {/* Totales */}
+          <div className="rounded-lg bg-muted p-3 space-y-1.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Cuotas y consumos</span>
+              <span className="tabular-nums">{formatCurrency(totalCents)}</span>
+            </div>
+            {extras.map((e) => (
+              <div key={e.id} className="flex justify-between text-sm">
+                <span className="text-muted-foreground truncate max-w-[60%]">{e.description}</span>
+                <span className={`tabular-nums ${e.amountCents < 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                  {e.amountCents < 0 ? "-" : "+"}{formatCurrency(Math.abs(e.amountCents))}
+                </span>
+              </div>
+            ))}
+            <div className="flex justify-between font-bold border-t pt-1.5 mt-1">
+              <span>Total a pagar</span>
+              <span className="text-lg tabular-nums">{formatCurrency(grandTotalCents)}</span>
+            </div>
           </div>
 
           {/* Cuenta */}
@@ -110,13 +160,7 @@ export function PayStatementDialog({
               </SelectContent>
             </Select>
             {selectedAccount && (
-              <p
-                className={`text-xs ${
-                  hasEnoughBalance
-                    ? "text-muted-foreground"
-                    : "text-destructive font-medium"
-                }`}
-              >
+              <p className={`text-xs ${hasEnoughBalance ? "text-muted-foreground" : "text-destructive font-medium"}`}>
                 Saldo disponible: {formatCurrency(selectedAccount.currentBalanceCents)}
                 {!hasEnoughBalance && " — saldo insuficiente"}
               </p>
@@ -136,7 +180,7 @@ export function PayStatementDialog({
 
           {/* Descripción */}
           <div className="space-y-1.5">
-            <Label htmlFor="pay-description">Descripción (opcional)</Label>
+            <Label htmlFor="pay-description">Descripción <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Input
               id="pay-description"
               placeholder="Ej: Pago resumen enero"
@@ -146,18 +190,35 @@ export function PayStatementDialog({
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button
-              disabled={!accountId || !hasEnoughBalance || payMutation.isPending}
-              onClick={handlePay}
-            >
-              {payMutation.isPending ? "Procesando..." : "Confirmar pago"}
+            <Button disabled={!canPay || payMutation.isPending} onClick={() => setConfirmOpen(true)}>
+              Confirmar pago
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Confirmar pago?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Confirmá el pago de la tarjeta <strong>{cardName}</strong> para el período{" "}
+            <strong>{MONTHS[periodMonth - 1]} {periodYear}</strong> por{" "}
+            <strong>{formatCurrency(grandTotalCents)}</strong>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction disabled={payMutation.isPending} onClick={handlePay}>
+            {payMutation.isPending ? "Procesando..." : "Confirmar"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

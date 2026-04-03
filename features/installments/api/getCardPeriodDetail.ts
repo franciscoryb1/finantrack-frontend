@@ -1,5 +1,11 @@
 import { apiFetch } from "@/lib/api";
 
+export type StatementExtra = {
+  id: number;
+  description: string;
+  amountCents: number;
+};
+
 export type CardPeriodDetail = {
   card: {
     id: number;
@@ -16,6 +22,13 @@ export type CardPeriodDetail = {
     dueDate: string;
     status: string;
   };
+  extras: StatementExtra[];
+  payment: {
+    id: number;
+    amountCents: number;
+    paidAt: string;
+    account: { id: number; name: string };
+  } | null;
   purchases: {
     purchaseId: number;
     description: string | null;

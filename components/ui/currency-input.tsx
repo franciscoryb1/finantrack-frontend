@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type"> & {
   value: number | undefined;
   onChange: (value: number | undefined) => void;
+  allowNegative?: boolean;
 };
 
 function formatDisplay(num: number | undefined): string {
@@ -25,7 +26,7 @@ function parseValue(raw: string): number | undefined {
   return isNaN(num) ? undefined : num;
 }
 
-export function CurrencyInput({ value, onChange, className, placeholder = "0,00", ...props }: Props) {
+export function CurrencyInput({ value, onChange, className, placeholder = "0,00", allowNegative = false, ...props }: Props) {
   const [focused, setFocused] = useState(false);
   const [rawValue, setRawValue] = useState(() => formatDisplay(value));
 
@@ -45,7 +46,7 @@ export function CurrencyInput({ value, onChange, className, placeholder = "0,00"
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
+    const raw = allowNegative ? e.target.value : e.target.value.replace("-", "");
     setRawValue(raw);
     onChange(parseValue(raw));
   }
