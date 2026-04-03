@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
 import { useInstallmentsOverview } from "@/features/installments/hooks/useInstallmentsOverview";
 import { CreateCreditCardDialog } from "@/features/credit-cards/components/CreateCreditCardDialog";
 import { CreditCardVisual } from "@/features/credit-cards/components/CreditCardVisual";
+import { EditStatementDatesDialog } from "@/features/installments/components/EditStatementDatesDialog";
 import { CreditCard } from "@/features/credit-cards/api/credit-cards.api";
 import { InstallmentsOverview } from "@/features/installments/api/installments.api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, cn } from "@/lib/utils";
-import { CreditCard as CreditCardIcon } from "lucide-react";
+import { CreditCard as CreditCardIcon, Pencil } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -146,13 +148,16 @@ export default function CreditCardsPage() {
   const { data: overview, isLoading: loadingOverview } = useInstallmentsOverview();
 
   const isLoading = loadingCards || loadingOverview;
+  const [editDatesCardId, setEditDatesCardId] = useState<number | null>(null);
 
   const cardsWithOverview = useMemo(
     () =>
-      (cards ?? []).map((card) => ({
-        card,
-        ov: overview?.cards.find((c) => c.cardId === card.id),
-      })),
+      (cards ?? [])
+        .map((card) => ({
+          card,
+          ov: overview?.cards.find((c) => c.cardId === card.id),
+        }))
+        .sort((a, b) => a.card.name.localeCompare(b.card.name, "es")),
     [cards, overview],
   );
 
@@ -185,25 +190,47 @@ export default function CreditCardsPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-6">
           {cardsWithOverview.map(({ card, ov }) => (
-            <Link
-              key={card.id}
-              href={`/credit-cards/${card.id}`}
-              className={cn(
-                "group block rounded-2xl border bg-card p-4 transition-all duration-200",
-                "hover:shadow-xl hover:-translate-y-0.5",
-                !card.isActive && "opacity-55",
-              )}
-            >
-              <CreditCardVisual
-                card={card}
-                backgroundColor={card.backgroundColor ?? ov?.backgroundColor ?? null}
-                closingDate={ov?.currentPeriodStatement?.closingDate ?? null}
-                dueDate={ov?.currentPeriodStatement?.dueDate ?? null}
-              />
-              <StatementInfo card={card} ov={ov} />
-            </Link>
+            <div key={card.id} className="relative">
+              <Link
+                href={`/credit-cards/${card.id}`}
+                className={cn(
+                  "group block rounded-2xl border bg-card p-4 transition-all duration-200",
+                  "hover:shadow-xl hover:-translate-y-0.5",
+                  !card.isActive && "opacity-55",
+                )}
+              >
+                <CreditCardVisual
+                  card={card}
+                  backgroundColor={card.backgroundColor ?? ov?.backgroundColor ?? null}
+                  closingDate={ov?.currentPeriodStatement?.closingDate ?? null}
+                  dueDate={ov?.currentPeriodStatement?.dueDate ?? null}
+                />
+                <StatementInfo card={card} ov={ov} />
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute bottom-4 right-4 h-7 w-7 text-muted-foreground hover:text-foreground bg-card"
+                title="Editar fechas del resumen"
+                onClick={(e) => { e.preventDefault(); setEditDatesCardId(card.id); }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           ))}
         </div>
+
+      )}
+
+      {editDatesCardId !== null && (
+        <EditStatementDatesDialog
+          cardId={editDatesCardId}
+          cardName={cardsWithOverview.find(({ card }) => card.id === editDatesCardId)?.card.name ?? ""}
+          open={editDatesCardId !== null}
+          onOpenChange={(o) => { if (!o) setEditDatesCardId(null); }}
+          defaultYear={cardsWithOverview.find(({ card }) => card.id === editDatesCardId)?.ov?.currentPeriodStatement?.year}
+          defaultMonth={cardsWithOverview.find(({ card }) => card.id === editDatesCardId)?.ov?.currentPeriodStatement?.month}
+        />
       )}
     </div>
   );
