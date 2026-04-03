@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { getCardDotColor } from "@/features/credit-cards/components/CreditCardVisual";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useUpdateCreditCardPurchase } from "../hooks/useUpdateCreditCardPurchase";
 import { useDeleteCreditCardPurchase } from "../hooks/useDeleteCreditCardPurchase";
@@ -101,6 +102,14 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
 
   const cardChanged = creditCardId !== undefined && creditCardId !== initialCreditCardId;
   const anyPending = update.isPending || del.isPending || reassign.isPending;
+
+  useEffect(() => {
+    if (!categories) return;
+
+    console.log("Categories:", categories);
+    console.log("Selected Parent:", selectedParent);
+    console.log("SubCategories:", selectedParent?.children ?? []);
+  }, [categories, parentCategoryId]);
 
   function reset() {
     setParentCategoryId(initialParentCategoryId);
@@ -213,105 +222,87 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
         </DialogHeader>
 
         <div className={cn("flex-1 overflow-y-auto sm:overflow-visible px-6 py-4")}>
-        <div className={cn(reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
-          {/* Columna izquierda: campos principales */}
-          <div className={cn("space-y-4", reimbursementEnabled && "sm:flex-1")}>
-            {/* Info de la compra (read-only) */}
-            <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm space-y-0.5">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-medium tabular-nums">
-                  {formatCurrency(item.amountCents * item.installmentInfo!.installmentsCount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Cuotas</span>
-                <span className="font-medium">{item.installmentInfo!.installmentsCount}</span>
-              </div>
-              {item.installmentInfo?.reimbursementAmountCents && (
+          <div className={cn(reimbursementEnabled ? "sm:flex sm:gap-6 sm:items-start" : "space-y-4")}>
+            {/* Columna izquierda: campos principales */}
+            <div className={cn("space-y-4", reimbursementEnabled && "sm:flex-1")}>
+              {/* Info de la compra (read-only) */}
+              <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm space-y-0.5">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Reintegro</span>
-                  <span className="font-medium text-green-600 tabular-nums">
-                    +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-medium tabular-nums">
+                    {formatCurrency(item.amountCents * item.installmentInfo!.installmentsCount)}
                   </span>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cuotas</span>
+                  <span className="font-medium">{item.installmentInfo!.installmentsCount}</span>
+                </div>
+                {item.installmentInfo?.reimbursementAmountCents && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Reintegro</span>
+                    <span className="font-medium text-green-600 tabular-nums">
+                      +{formatCurrency(item.installmentInfo.reimbursementAmountCents)}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-            {serverError && (
-              <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
-                {serverError}
-              </p>
-            )}
-
-            {/* Tarjeta */}
-            <div className="space-y-1.5">
-              <Label>Tarjeta</Label>
-              <Select
-                value={creditCardId?.toString() ?? ""}
-                onValueChange={(val) => setCreditCardId(Number(val))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar tarjeta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {creditCards?.filter((c) => c.isActive || c.id === initialCreditCardId).map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.name} ···· {c.cardLast4}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {cardChanged && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Se reasignarán todas las cuotas pendientes a la nueva tarjeta.
+              {serverError && (
+                <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+                  {serverError}
                 </p>
               )}
-            </div>
 
-            {/* Categoría */}
-            <div className="space-y-1.5">
-              <Label>
-                Categoría{" "}
-                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-              </Label>
-              <Select
-                value={parentCategoryId?.toString() ?? ""}
-                onValueChange={(val) => {
-                  const id = Number(val);
-                  setParentCategoryId(id);
-                  setCategoryId(id);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sin categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Tarjeta */}
+              <div className="space-y-1.5">
+                <Label>Tarjeta</Label>
+                <Select
+                  value={creditCardId?.toString() ?? ""}
+                  onValueChange={(val) => setCreditCardId(Number(val))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar tarjeta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {creditCards?.filter((c) => c.isActive || c.id === initialCreditCardId).map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: getCardDotColor(c.brand, c.backgroundColor) }}
+                          />
+                          {c.name} ···· {c.cardLast4}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {cardChanged && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Se reasignarán todas las cuotas pendientes a la nueva tarjeta.
+                  </p>
+                )}
+              </div>
 
-            {/* Subcategoría */}
-            {subCategories.length > 0 && (
+              {/* Categoría */}
               <div className="space-y-1.5">
                 <Label>
-                  Subcategoría{" "}
+                  Categoría{" "}
                   <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
                 </Label>
                 <Select
-                  value={isSubSelected ? categoryId?.toString() ?? "" : ""}
-                  onValueChange={(val) => setCategoryId(Number(val))}
+                  value={parentCategoryId?.toString() ?? ""}
+                  onValueChange={(val) => {
+                    const id = Number(val);
+                    setParentCategoryId(id);
+                    setCategoryId(id);
+                  }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sin subcategoría" />
+                    <SelectValue placeholder="Sin categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subCategories.map((c) => (
+                    {categories?.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
                         {c.name}
                       </SelectItem>
@@ -319,165 +310,189 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
                   </SelectContent>
                 </Select>
               </div>
-            )}
 
-            {/* Descripción */}
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-purchase-desc">
-                Descripción{" "}
-                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-              </Label>
-              <Input
-                id="edit-purchase-desc"
-                placeholder="Ej: Netflix, Ropa..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-1.5">
-              <Label>
-                Etiquetas{" "}
-                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-              </Label>
-              <TagPicker value={tagIds} onChange={setTagIds} />
-            </div>
-
-            {/* Toggle reintegro (siempre visible en columna izquierda) */}
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Reintegro</p>
-                  <p className="text-xs text-muted-foreground">Cashback o promoción bancaria</p>
-                </div>
-                <Switch
-                  checked={reimbursementEnabled}
-                  onCheckedChange={(checked) => {
-                    setReimbursementEnabled(checked);
-                    if (!checked) {
-                      setReimbursementAmount(undefined);
-                      setReimbursementAccountId(undefined);
-                      setReimbursementAt(today);
-                    } else if (!reimbursementAt) {
-                      setReimbursementAt(today);
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Campos de reintegro en mobile (inline bajo el toggle) */}
-              {reimbursementEnabled && (
-                <div className="sm:hidden mt-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Monto ($)</Label>
-                      <CurrencyInput
-                        value={reimbursementAmount}
-                        onChange={setReimbursementAmount}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Fecha</Label>
-                      <Input
-                        type="date"
-                        value={reimbursementAt}
-                        onChange={(e) => setReimbursementAt(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Cuenta de acreditación</Label>
-                    <Select
-                      value={reimbursementAccountId?.toString() ?? ""}
-                      onValueChange={(val) => setReimbursementAccountId(Number(val))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="¿En qué cuenta?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id.toString()}>
-                            <span>{a.name}</span>
-                            <span className="ml-2 text-muted-foreground text-xs">
-                              {formatCurrency(a.currentBalanceCents)}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* Subcategoría */}
+              {subCategories.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>
+                    Subcategoría{" "}
+                    <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+                  </Label>
+                  <Select
+                    value={isSubSelected ? categoryId?.toString() ?? "" : ""}
+                    onValueChange={(val) => setCategoryId(Number(val))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sin subcategoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
-            </div>
 
-            {/* Gasto compartido */}
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Es gasto compartido</p>
-                  <p className="text-xs text-muted-foreground">Parte del gasto la paga otra persona</p>
-                </div>
-                <Switch
-                  checked={sharedExpenseEnabled}
-                  onCheckedChange={(checked) => {
-                    setSharedExpenseEnabled(checked);
-                    if (!checked) setSharedAmountCentsInput(undefined);
-                  }}
+              {/* Descripción */}
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-purchase-desc">
+                  Descripción{" "}
+                  <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+                </Label>
+                <Input
+                  id="edit-purchase-desc"
+                  placeholder="Ej: Netflix, Ropa..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              {sharedExpenseEnabled && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Monto compartido ($)</Label>
-                  <CurrencyInput
-                    value={sharedAmountCentsInput}
-                    onChange={setSharedAmountCentsInput}
+
+              {/* Tags */}
+              <div className="space-y-1.5">
+                <Label>
+                  Etiquetas{" "}
+                  <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+                </Label>
+                <TagPicker value={tagIds} onChange={setTagIds} />
+              </div>
+
+              {/* Toggle reintegro (siempre visible en columna izquierda) */}
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Reintegro</p>
+                    <p className="text-xs text-muted-foreground">Cashback o promoción bancaria</p>
+                  </div>
+                  <Switch
+                    checked={reimbursementEnabled}
+                    onCheckedChange={(checked) => {
+                      setReimbursementEnabled(checked);
+                      if (!checked) {
+                        setReimbursementAmount(undefined);
+                        setReimbursementAccountId(undefined);
+                        setReimbursementAt(today);
+                      } else if (!reimbursementAt) {
+                        setReimbursementAt(today);
+                      }
+                    }}
                   />
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Columna derecha: panel de reintegro (solo desktop) */}
-          {reimbursementEnabled && (
-            <div className="hidden sm:flex sm:flex-col sm:gap-3 sm:w-56 sm:border-l sm:pl-6 sm:pt-0">
-              <p className="text-sm font-medium">Datos del reintegro</p>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Monto ($)</Label>
-                <CurrencyInput
-                  value={reimbursementAmount}
-                  onChange={setReimbursementAmount}
-                />
+                {/* Campos de reintegro en mobile (inline bajo el toggle) */}
+                {reimbursementEnabled && (
+                  <div className="sm:hidden mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Monto ($)</Label>
+                        <CurrencyInput
+                          value={reimbursementAmount}
+                          onChange={setReimbursementAmount}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Fecha</Label>
+                        <Input
+                          type="date"
+                          value={reimbursementAt}
+                          onChange={(e) => setReimbursementAt(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Cuenta de acreditación</Label>
+                      <Select
+                        value={reimbursementAccountId?.toString() ?? ""}
+                        onValueChange={(val) => setReimbursementAccountId(Number(val))}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="¿En qué cuenta?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts.map((a) => (
+                            <SelectItem key={a.id} value={a.id.toString()}>
+                              <span>{a.name}</span>
+                              <span className="ml-2 text-muted-foreground text-xs">
+                                {formatCurrency(a.currentBalanceCents)}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Fecha de acreditación</Label>
-                <Input
-                  type="date"
-                  value={reimbursementAt}
-                  onChange={(e) => setReimbursementAt(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Cuenta de acreditación</Label>
-                <Select
-                  value={reimbursementAccountId?.toString() ?? ""}
-                  onValueChange={(val) => setReimbursementAccountId(Number(val))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="¿En qué cuenta?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id.toString()}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+              {/* Gasto compartido */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Es gasto compartido</p>
+                    <p className="text-xs text-muted-foreground">Parte del gasto la paga otra persona</p>
+                  </div>
+                  <Switch
+                    checked={sharedExpenseEnabled}
+                    onCheckedChange={(checked) => {
+                      setSharedExpenseEnabled(checked);
+                      if (!checked) setSharedAmountCentsInput(undefined);
+                    }}
+                  />
+                </div>
+                {sharedExpenseEnabled && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Monto compartido ($)</Label>
+                    <CurrencyInput
+                      value={sharedAmountCentsInput}
+                      onChange={setSharedAmountCentsInput}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
+
+            {/* Columna derecha: panel de reintegro (solo desktop) */}
+            {reimbursementEnabled && (
+              <div className="hidden sm:flex sm:flex-col sm:gap-3 sm:w-56 sm:border-l sm:pl-6 sm:pt-0">
+                <p className="text-sm font-medium">Datos del reintegro</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Monto ($)</Label>
+                  <CurrencyInput
+                    value={reimbursementAmount}
+                    onChange={setReimbursementAmount}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Fecha de acreditación</Label>
+                  <Input
+                    type="date"
+                    value={reimbursementAt}
+                    onChange={(e) => setReimbursementAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Cuenta de acreditación</Label>
+                  <Select
+                    value={reimbursementAccountId?.toString() ?? ""}
+                    onValueChange={(val) => setReimbursementAccountId(Number(val))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="¿En qué cuenta?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id.toString()}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="shrink-0 px-6 pt-3 pb-4 border-t flex items-center justify-between gap-2">
@@ -518,7 +533,7 @@ export function EditCreditCardPurchaseDialog({ item, open, onOpenChange }: Props
             </Button>
           </div>
         </div>
-        </DialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

@@ -27,6 +27,7 @@ import { movementSchema, MovementFormValues } from "../schemas/movement.schema";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { getCardDotColor } from "@/features/credit-cards/components/CreditCardVisual";
 import { TagPicker } from "@/features/tags/components/TagPicker";
 import { CreditCard, Users, Tag } from "lucide-react";
 
@@ -467,7 +468,13 @@ export function MovementForm({
                             .filter((c) => c.isActive)
                             .map((c) => (
                               <SelectItem key={c.id} value={c.id.toString()}>
-                                {c.name} ···· {c.cardLast4}
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ background: getCardDotColor(c.brand, c.backgroundColor) }}
+                                  />
+                                  {c.name} ···· {c.cardLast4}
+                                </span>
                               </SelectItem>
                             ))}
                         </SelectContent>

@@ -26,6 +26,18 @@ export function getCardBackground(
   return { background: "linear-gradient(135deg, #374151 0%, #111827 100%)" };
 }
 
+/** Color sólido representativo de la tarjeta — mismo orden de prioridad que getCardBackground. */
+export function getCardDotColor(
+  brand: string | null | undefined,
+  bg: string | null | undefined,
+): string {
+  const isDefault = !bg || bg === "#ffffff" || bg === "#FFFFFF";
+  if (!isDefault) return bg!;
+  if (brand === "VISA") return "#1a1f71";
+  if (brand === "MASTERCARD") return "#eb001b";
+  return "#374151";
+}
+
 // ── Chip ──────────────────────────────────────────────────────────────────────
 
 function Chip() {

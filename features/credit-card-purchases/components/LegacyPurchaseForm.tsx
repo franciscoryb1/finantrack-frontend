@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { getCardDotColor } from "@/features/credit-cards/components/CreditCardVisual";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { legacyPurchaseSchema, LegacyPurchaseFormValues } from "../schemas/legacy-purchase.schema";
 
@@ -125,9 +126,15 @@ export function LegacyPurchaseForm({ onSubmit, creditCardId }: Props) {
                       .filter((c) => c.isActive)
                       .map((c) => (
                         <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.name}
-                          {c.brand ? ` · ${c.brand}` : ""}
-                          {` ···· ${c.cardLast4}`}
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ background: getCardDotColor(c.brand, c.backgroundColor) }}
+                            />
+                            {c.name}
+                            {c.brand ? ` · ${c.brand}` : ""}
+                            {` ···· ${c.cardLast4}`}
+                          </span>
                         </SelectItem>
                       ))}
                   </SelectContent>

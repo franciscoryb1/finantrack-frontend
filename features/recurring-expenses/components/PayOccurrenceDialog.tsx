@@ -25,6 +25,7 @@ import { useUpdateRecurringExpense } from "../hooks/useUpdateRecurringExpense";
 import { RecurringOccurrence } from "../api/recurring-expenses.api";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
+import { getCardDotColor } from "@/features/credit-cards/components/CreditCardVisual";
 import { formatCurrency } from "@/lib/utils";
 import { RefreshCcw } from "lucide-react";
 
@@ -214,9 +215,15 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
                     <SelectContent>
                       {creditCards.map((c) => (
                         <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.name}
-                          <span className="ml-2 text-muted-foreground text-xs">
-                            ···{c.cardLast4}
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ background: getCardDotColor(c.brand, c.backgroundColor) }}
+                            />
+                            {c.name}
+                            <span className="text-muted-foreground text-xs">
+                              ···{c.cardLast4}
+                            </span>
                           </span>
                         </SelectItem>
                       ))}
