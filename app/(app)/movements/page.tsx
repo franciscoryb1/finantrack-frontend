@@ -737,8 +737,9 @@ export default function MovementsPage() {
   // ── Items assembly — Movimientos ───────────────────────────────────────────
 
   // Todas las compras CC por occurredAt (aparecen en movimientos por fecha de compra)
+  // Se excluyen los créditos/devoluciones de tarjeta (isCredit), no son movimientos de cuenta
   const ccPurchaseItems = useMemo<DashboardActivityItem[]>(
-    () => ccPurchases.map(ccPurchaseToActivityItem),
+    () => ccPurchases.filter((p) => !p.isCredit).map(ccPurchaseToActivityItem),
     [ccPurchases],
   );
 

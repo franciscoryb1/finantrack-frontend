@@ -127,6 +127,8 @@ export default function DashboardPage() {
     const map = new Map<string, { totalCents: number; subcategories: Map<string, number> }>();
     for (const item of activity?.items ?? []) {
       if (item.type !== "EXPENSE" || !item.category) continue;
+      // Excluir devoluciones de tarjeta
+      if (item.installmentInfo?.isCredit === true) continue;
       // Excluir cuotas múltiples si el toggle está apagado
       if (!includeCuotas && item.kind === "CREDIT_CARD_INSTALLMENT" && (item.installmentInfo?.installmentsCount ?? 1) > 1) continue;
       const root = item.category.parent?.name ?? item.category.name;
@@ -134,25 +136,19 @@ export default function DashboardPage() {
       if (!map.has(root)) map.set(root, { totalCents: 0, subcategories: new Map() });
       const entry = map.get(root)!;
 
-      // Crédito de tarjeta: resta de la categoría si tiene categoría asociada
-      const isCredit = item.installmentInfo?.isCredit === true;
-      const sign = isCredit ? -1 : 1;
-
       // Calcular monto efectivo: descontar porción compartida y reintegros de tarjeta
       let effectiveCents = item.amountCents;
-      if (!isCredit) {
-        if (item.sharedExpense) {
-          effectiveCents -= item.sharedExpense.sharedAmountCents;
-        }
-        if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.reimbursementAmountCents) {
-          const perCuota = Math.round(item.installmentInfo.reimbursementAmountCents / item.installmentInfo.installmentsCount);
-          effectiveCents -= perCuota;
-        }
-        effectiveCents = Math.max(0, effectiveCents);
+      if (item.sharedExpense) {
+        effectiveCents -= item.sharedExpense.sharedAmountCents;
       }
+      if (item.kind === "CREDIT_CARD_INSTALLMENT" && item.installmentInfo?.reimbursementAmountCents) {
+        const perCuota = Math.round(item.installmentInfo.reimbursementAmountCents / item.installmentInfo.installmentsCount);
+        effectiveCents -= perCuota;
+      }
+      effectiveCents = Math.max(0, effectiveCents);
 
-      entry.totalCents += sign * effectiveCents;
-      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + sign * effectiveCents);
+      entry.totalCents += effectiveCents;
+      if (sub) entry.subcategories.set(sub, (entry.subcategories.get(sub) ?? 0) + effectiveCents);
     }
     return map;
   }, [activity, includeCuotas]);
