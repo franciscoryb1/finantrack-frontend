@@ -744,7 +744,7 @@ export default function CreditCardDetailPage() {
           open={payStatementOpen}
           onOpenChange={setPayStatementOpen}
           statementId={data.period.id}
-          totalCents={data.period.totalCents}
+          totalCents={totalToPay - extrasTotalCents}
           extras={extras}
           cardId={cardId}
           cardName={data.card.name}
