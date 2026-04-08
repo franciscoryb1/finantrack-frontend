@@ -11,6 +11,7 @@ export type CreateCreditCardPurchaseInput = {
   reimbursementAccountId?: number;
   reimbursementAt?: string;
   sharedAmountCents?: number;
+  sharedReimbursementAccountId?: number;
   tagIds?: number[];
 };
 

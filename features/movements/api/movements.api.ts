@@ -15,6 +15,8 @@ export type Movement = {
   category: { id: number; name: string; type: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   recurringPayment?: { id: number } | null;
   tags: MovementTag[];
+  sharedAmountCents?: number | null;
+  sharedReimbursements?: { amountCents: number }[];
   sharedFromMovementId?: number | null;
   sharedFromCreditCardPurchaseId?: number | null;
   reimbursedPurchase?: { id: number } | null;
@@ -54,6 +56,7 @@ export type CreateMovementInput = {
   description?: string;
   tagIds?: number[];
   sharedAmountCents?: number;
+  sharedReimbursementAccountId?: number;
 };
 
 export function getMovements(params: ListMovementsParams) {

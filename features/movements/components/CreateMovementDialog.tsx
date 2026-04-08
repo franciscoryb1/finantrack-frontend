@@ -13,7 +13,6 @@ import { Plus } from "lucide-react";
 import { MovementForm } from "./MovementForm";
 import { useCreateMovement } from "../hooks/useCreateMovement";
 import { useCreateCreditCardPurchase } from "@/features/credit-card-purchases/hooks/useCreateCreditCardPurchase";
-import { registerMovementReimbursement, registerPurchaseReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
 import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 
@@ -45,7 +44,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           const [ry, rm, rd] = values.reimbursementAt.split("-").map(Number);
           reimbursementAt = new Date(ry, rm - 1, rd, 12, 0, 0).toISOString();
         }
-        const purchase = await createPurchase.mutateAsync({
+        await createPurchase.mutateAsync({
           creditCardId: values.creditCardId!,
           totalAmountCents: Math.round(values.amount * 100),
           installmentsCount: values.installmentsCount!,
@@ -59,17 +58,10 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
             reimbursementAt,
           }),
           sharedAmountCents,
+          sharedReimbursementAccountId: sharedAmountCents ? values.sharedReimbursementAccountId : undefined,
         });
-        if (sharedAmountCents && values.sharedReimbursementAccountId) {
-          await registerPurchaseReimbursement(purchase.id, {
-            accountId: values.sharedReimbursementAccountId,
-            amountCents: sharedAmountCents,
-            occurredAt,
-            description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
-          });
-        }
       } else {
-        const movement = await createMovement.mutateAsync({
+        await createMovement.mutateAsync({
           type: values.type,
           amountCents: Math.round(values.amount * 100),
           accountId: values.accountId!,
@@ -78,15 +70,8 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           occurredAt,
           tagIds: values.tagIds?.length ? values.tagIds : undefined,
           sharedAmountCents,
+          sharedReimbursementAccountId: sharedAmountCents ? values.sharedReimbursementAccountId : undefined,
         });
-        if (sharedAmountCents && values.sharedReimbursementAccountId) {
-          await registerMovementReimbursement(movement.id, {
-            accountId: values.sharedReimbursementAccountId,
-            amountCents: sharedAmountCents,
-            occurredAt,
-            description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
-          });
-        }
       }
       setOpen(false);
     } catch (e) {

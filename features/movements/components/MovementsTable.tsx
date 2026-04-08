@@ -44,7 +44,6 @@ import { EditCreditCardPurchaseDialog } from "@/features/credit-card-purchases/c
 import { useDeleteMovement } from "../hooks/useDeleteMovement";
 import { useDeleteTransfer } from "@/features/account-transfers/hooks/useDeleteTransfer";
 import { SharedExpenseBadge } from "@/features/shared-expenses/components/SharedExpenseBadge";
-import { RegisterReimbursementDialog } from "@/features/shared-expenses/components/RegisterReimbursementDialog";
 
 const PAGE_SIZE = 10;
 
@@ -162,13 +161,6 @@ export function MovementsTable({ items, loading }: Props) {
   const [editPurchaseItem, setEditPurchaseItem] = useState<DashboardActivityItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<DashboardActivityItem | null>(null);
   const [deleteTransferItem, setDeleteTransferItem] = useState<DashboardActivityItem | null>(null);
-  type SharedExpenseInfo = { sharedAmountCents: number; receivedAmountCents: number; pendingAmountCents: number };
-  const [reimbursementTarget, setReimbursementTarget] = useState<{
-    kind: "movement" | "purchase";
-    sourceId: number;
-    info: SharedExpenseInfo;
-    description: string | null;
-  } | null>(null);
   const deleteMovement = useDeleteMovement();
   const deleteTransfer = useDeleteTransfer();
 
@@ -178,6 +170,7 @@ export function MovementsTable({ items, loading }: Props) {
       return;
     }
     if (item.kind !== "MOVEMENT") return;
+    if (item.incomeSource) return; // reintegros derivados: no editables
     const type = item.type as ItemType;
     if (isTransfer(type) && item.transferData) {
       setEditTransferItem(item);
@@ -301,15 +294,7 @@ export function MovementsTable({ items, loading }: Props) {
                   ))}
                 </div>
                 {item.sharedExpense && (
-                  <SharedExpenseBadge
-                    info={item.sharedExpense}
-                    onRegister={item.sharedExpense.pendingAmountCents > 0 ? () => setReimbursementTarget({
-                      kind: item.kind === "CREDIT_CARD_INSTALLMENT" ? "purchase" : "movement",
-                      sourceId: item.kind === "CREDIT_CARD_INSTALLMENT" ? (item.installmentInfo?.purchaseId ?? item.id) : item.id,
-                      info: item.sharedExpense!,
-                      description: item.description,
-                    }) : undefined}
-                  />
+                  <SharedExpenseBadge info={item.sharedExpense} />
                 )}
               </div>
 
@@ -472,15 +457,7 @@ export function MovementsTable({ items, loading }: Props) {
                       </div>
                     )}
                     {item.sharedExpense && (
-                      <SharedExpenseBadge
-                        info={item.sharedExpense}
-                        onRegister={item.sharedExpense.pendingAmountCents > 0 ? () => setReimbursementTarget({
-                          kind: item.kind === "CREDIT_CARD_INSTALLMENT" ? "purchase" : "movement",
-                          sourceId: item.kind === "CREDIT_CARD_INSTALLMENT" ? (item.installmentInfo?.purchaseId ?? item.id) : item.id,
-                          info: item.sharedExpense!,
-                          description: item.description,
-                        }) : undefined}
-                      />
+                      <SharedExpenseBadge info={item.sharedExpense} />
                     )}
                   </div>
                 </td>
@@ -524,7 +501,7 @@ export function MovementsTable({ items, loading }: Props) {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
-                  {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && !isTransfer(item.type as ItemType) && (
+                  {item.kind === "MOVEMENT" && !isSystemGenerated(item.type as ItemType) && !isTransfer(item.type as ItemType) && !item.incomeSource && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -663,20 +640,6 @@ export function MovementsTable({ items, loading }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* ── Diálogo registrar reintegro gasto compartido ── */}
-      {reimbursementTarget && (
-        <RegisterReimbursementDialog
-          open={!!reimbursementTarget}
-          onOpenChange={(open) => { if (!open) setReimbursementTarget(null); }}
-          kind={reimbursementTarget.kind}
-          sourceId={reimbursementTarget.sourceId}
-          sharedAmountCents={reimbursementTarget.info.sharedAmountCents}
-          receivedAmountCents={reimbursementTarget.info.receivedAmountCents}
-          pendingAmountCents={reimbursementTarget.info.pendingAmountCents}
-          expenseDescription={reimbursementTarget.description}
-        />
-      )}
 
       {/* ── Paginación ── */}
       {totalPages > 1 && (

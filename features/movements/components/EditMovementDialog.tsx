@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { MovementForm } from "./MovementForm";
 import { DiscardChangesAlert } from "@/components/ui/discard-changes-alert";
 import { useUpdateMovement } from "../hooks/useUpdateMovement";
-import { registerMovementReimbursement } from "@/features/shared-expenses/api/shared-expenses.api";
 import { MovementFormValues } from "../schemas/movement.schema";
 import { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
 
@@ -70,14 +69,6 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
           sharedAmountCents: values.sharedExpenseEnabled ? sharedAmountCents : null,
         },
       });
-      if (sharedAmountCents && values.sharedReimbursementAccountId) {
-        await registerMovementReimbursement(item.id, {
-          accountId: values.sharedReimbursementAccountId,
-          amountCents: sharedAmountCents,
-          occurredAt,
-          description: values.description ? `Reintegro - ${values.description}` : "Reintegro",
-        });
-      }
       onOpenChange(false);
     } catch (e) {
       setServerError(e instanceof Error ? e.message : "Error inesperado");
@@ -116,6 +107,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
             formId="edit-movement-form"
             onDirtyChange={setIsDirty}
             hidePaymentMethod
+            mode="edit"
           />
         </div>
 

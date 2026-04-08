@@ -11,11 +11,10 @@ type SharedExpenseInfo = {
 
 type Props = {
   info: SharedExpenseInfo;
-  onRegister?: () => void;
   className?: string;
 };
 
-export function SharedExpenseBadge({ info, onRegister, className }: Props) {
+export function SharedExpenseBadge({ info, className }: Props) {
   const isFullyReceived = info.pendingAmountCents <= 0;
 
   return (
@@ -40,19 +39,9 @@ export function SharedExpenseBadge({ info, onRegister, className }: Props) {
           cobrado {formatCurrency(info.receivedAmountCents)}
         </span>
       ) : (
-        <>
-          <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
-            pendiente {formatCurrency(info.pendingAmountCents)}
-          </span>
-          {onRegister && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onRegister(); }}
-              className="text-[10px] underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              cobrar
-            </button>
-          )}
-        </>
+        <span className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums">
+          pendiente {formatCurrency(info.pendingAmountCents)}
+        </span>
       )}
     </div>
   );

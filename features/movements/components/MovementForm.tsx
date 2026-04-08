@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, formatCurrency } from "@/lib/utils";
-import { movementSchema, MovementFormValues } from "../schemas/movement.schema";
+import { buildMovementSchema, MovementFormValues } from "../schemas/movement.schema";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useCreditCards } from "@/features/credit-cards/hooks/useCreditCards";
@@ -39,6 +39,7 @@ type Props = {
   formId?: string;
   onDirtyChange?: (dirty: boolean) => void;
   hidePaymentMethod?: boolean;
+  mode?: "create" | "edit";
 };
 
 export function MovementForm({
@@ -49,10 +50,11 @@ export function MovementForm({
   formId,
   onDirtyChange,
   hidePaymentMethod = false,
+  mode = "create",
 }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const form = useForm<MovementFormValues>({
-    resolver: zodResolver(movementSchema),
+    resolver: zodResolver(buildMovementSchema(mode)),
     defaultValues: {
       type: "EXPENSE",
       amount: undefined,
@@ -657,7 +659,7 @@ export function MovementForm({
                         </FormItem>
                       )}
                     />
-                    {renderAccountSelect(
+                    {mode === "create" && renderAccountSelect(
                       "sharedReimbursementAccountId",
                       "Seleccionar cuenta…",
                       "¿En qué cuenta entra el dinero?"

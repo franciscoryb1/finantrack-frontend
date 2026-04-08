@@ -1,29 +1,30 @@
 import { z } from "zod";
 
-export const movementSchema = z
-  .object({
-    type: z.enum(["INCOME", "EXPENSE"]),
-    amount: z.number().positive("Debe ser mayor a 0"),
-    description: z.string().optional(),
-    categoryId: z.number().optional(),
-    occurredAt: z.string().min(1, "Seleccionar una fecha"),
-    paymentMethod: z.enum(["ACCOUNT", "CREDIT_CARD"]),
-    tagIds: z.array(z.number()).optional(),
-    // Campos condicionales según paymentMethod
-    accountId: z.number().optional(),
-    creditCardId: z.number().optional(),
-    installmentsCount: z.number().int().min(1).optional(),
-    // Reintegro (solo aplica para CREDIT_CARD)
-    reimbursementEnabled: z.boolean().optional(),
-    reimbursementAmount: z.number().positive().optional(),
-    reimbursementAccountId: z.number().optional(),
-    reimbursementAt: z.string().optional(),
-    // Gasto compartido (solo aplica para EXPENSE)
-    sharedExpenseEnabled: z.boolean().optional(),
-    sharedAmount: z.number().positive().optional(),
-    sharedReimbursementAccountId: z.number().optional(),
-  })
-  .superRefine((data, ctx) => {
+const baseShape = {
+  type: z.enum(["INCOME", "EXPENSE"]),
+  amount: z.number().positive("Debe ser mayor a 0"),
+  description: z.string().optional(),
+  categoryId: z.number().optional(),
+  occurredAt: z.string().min(1, "Seleccionar una fecha"),
+  paymentMethod: z.enum(["ACCOUNT", "CREDIT_CARD"]),
+  tagIds: z.array(z.number()).optional(),
+  // Campos condicionales según paymentMethod
+  accountId: z.number().optional(),
+  creditCardId: z.number().optional(),
+  installmentsCount: z.number().int().min(1).optional(),
+  // Reintegro (solo aplica para CREDIT_CARD)
+  reimbursementEnabled: z.boolean().optional(),
+  reimbursementAmount: z.number().positive().optional(),
+  reimbursementAccountId: z.number().optional(),
+  reimbursementAt: z.string().optional(),
+  // Gasto compartido (solo aplica para EXPENSE)
+  sharedExpenseEnabled: z.boolean().optional(),
+  sharedAmount: z.number().positive().optional(),
+  sharedReimbursementAccountId: z.number().optional(),
+};
+
+export function buildMovementSchema(mode: "create" | "edit" = "create") {
+  return z.object(baseShape).superRefine((data, ctx) => {
     if (data.paymentMethod === "ACCOUNT") {
       if (!data.accountId || data.accountId < 1) {
         ctx.addIssue({
@@ -75,14 +76,16 @@ export const movementSchema = z
           path: ["sharedAmount"],
         });
       }
-      if (!data.sharedReimbursementAccountId) {
+      if (mode === "create" && !data.sharedReimbursementAccountId) {
         ctx.addIssue({
           code: "custom",
-          message: "Seleccioná la cuenta donde entra el dinero",
+          message: "Seleccionar una cuenta",
           path: ["sharedReimbursementAccountId"],
         });
       }
     }
   });
+}
 
+export const movementSchema = buildMovementSchema("create");
 export type MovementFormValues = z.infer<typeof movementSchema>;
