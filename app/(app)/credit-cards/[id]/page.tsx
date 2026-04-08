@@ -121,6 +121,8 @@ type Purchase = {
   isCredit: boolean;
   category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
   tags: { id: number; name: string; color: string | null }[];
+  sharedAmountCents?: number | null;
+  sharedExpense?: { sharedAmountCents: number; receivedAmountCents: number; pendingAmountCents: number } | null;
   installmentForThisPeriod: { installmentNumber: number; amountCents: number; status: string };
 };
 
@@ -447,7 +449,7 @@ export default function CreditCardDetailPage() {
         isCredit: purchase.isCredit,
       },
       transferData: null,
-      sharedExpense: null,
+      sharedExpense: purchase.sharedExpense ?? null,
       incomeSource: null,
       balanceAdjustmentIncreased: null,
     };

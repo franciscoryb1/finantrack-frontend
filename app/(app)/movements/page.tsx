@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useMovements } from "@/features/movements/hooks/useMovements";
 import { useMovementsSummary } from "@/features/movements/hooks/useMovementsSummary";
 import { useDashboardActivity } from "@/features/dashboard/hooks/useDashboardActivity";
 import { useCreditCardPurchasesByDate } from "@/features/credit-card-purchases/hooks/useCreditCardPurchasesByDate";
@@ -13,7 +12,7 @@ import { MovementsTable } from "@/features/movements/components/MovementsTable";
 import { CreateMovementDialog } from "@/features/movements/components/CreateMovementDialog";
 import { KpiCard } from "@/features/movements/components/KpiCard";
 import { DashboardActivityItem } from "@/features/dashboard/api/dashboard.api";
-import { Movement, MovementType } from "@/features/movements/api/movements.api";
+import { MovementType } from "@/features/movements/api/movements.api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -85,34 +84,6 @@ function ccPurchaseToActivityItem(p: CreditCardPurchaseByDate): DashboardActivit
   };
 }
 
-function toActivityItem(m: Movement): DashboardActivityItem {
-  return {
-    kind: "MOVEMENT",
-    id: m.id,
-    type: m.type,
-    amountCents: Math.abs(m.amountCents),
-    description: m.description,
-    occurredAt: m.occurredAt,
-    purchaseDate: null,
-    registeredAt: m.occurredAt,
-    isRecurring: !!m.recurringPayment,
-    tags: m.tags ?? [],
-    account: m.account,
-    creditCard: null,
-    installmentInfo: null,
-    transferData: null,
-    sharedExpense: null,
-    incomeSource: m.reimbursedPurchase
-      ? "PURCHASE_REIMBURSEMENT"
-      : (m.sharedFromMovementId || m.sharedFromCreditCardPurchaseId)
-      ? "SHARED_REIMBURSEMENT"
-      : null,
-    balanceAdjustmentIncreased: m.type === "BALANCE_ADJUSTMENT" ? m.amountCents > 0 : null,
-    category: m.category
-      ? { id: m.category.id, name: m.category.name, color: m.category.color, parent: m.category.parent ?? null }
-      : null,
-  };
-}
 
 // ── MultiCheckCombo ────────────────────────────────────────────────────────────
 
@@ -606,11 +577,6 @@ export default function MovementsPage() {
 
   // ── Data ───────────────────────────────────────────────────────────────────
 
-  const { data: movementsData, isLoading: movLoading } = useMovements({
-    fromDate, toDate,
-    pageSize: 500,
-  });
-
   const { data: summary, isLoading: summaryLoading } = useMovementsSummary({ fromDate, toDate });
 
   const { data: accounts    = [] } = useAccounts({ status: "active" });
@@ -618,6 +584,8 @@ export default function MovementsPage() {
   const { data: creditCards = [] } = useCreditCards();
   const { data: dashActivity      } = useDashboardActivity(year, month);
   const { data: ccPurchases = []  } = useCreditCardPurchasesByDate(fromDate, toDate);
+
+  const movLoading = !dashActivity;
 
   // ── Derived lists ──────────────────────────────────────────────────────────
 
@@ -744,8 +712,8 @@ export default function MovementsPage() {
   );
 
   const allMovItems = useMemo<DashboardActivityItem[]>(() => {
-    // Movimientos regulares
-    let movs = (movementsData?.items ?? []).map(toActivityItem);
+    // Movimientos regulares desde dashActivity (incluye TRANSFER, BALANCE_ADJUSTMENT, etc.)
+    let movs = (dashActivity?.items ?? []).filter((i) => i.kind === "MOVEMENT");
     if (movTypeFilter === "INCOME") {
       movs = movs.filter((m) => m.type === "INCOME");
     } else if (movTypeFilter === "EXPENSE") {
@@ -766,7 +734,7 @@ export default function MovementsPage() {
     const combined = [...movs, ...ccItems];
     combined.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
     return combined;
-  }, [movementsData, ccPurchaseItems, movTypeFilter, movAccountIds, movCardIds]);
+  }, [dashActivity, ccPurchaseItems, movTypeFilter, movAccountIds, movCardIds]);
 
   const filteredMovItems = useMemo(() => {
     let items = allMovItems;

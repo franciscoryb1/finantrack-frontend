@@ -40,6 +40,8 @@ export type CardPeriodDetail = {
     category: { id: number; name: string; color: string | null; parent: { id: number; name: string; color: string | null } | null } | null;
     tags: { id: number; name: string; color: string | null }[];
     isCredit: boolean;
+    sharedAmountCents: number | null;
+    sharedExpense: { sharedAmountCents: number; receivedAmountCents: number; pendingAmountCents: number } | null;
     installmentForThisPeriod: {
       installmentNumber: number;
       amountCents: number;
