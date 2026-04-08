@@ -14,6 +14,7 @@ export function useReassignCreditCardPurchase() {
       queryClient.invalidateQueries({ queryKey: ["installments-overview"] });
       queryClient.invalidateQueries({ queryKey: ["card-period"] });
       queryClient.invalidateQueries({ queryKey: ["card-periods"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
     onError: (error: Error) => {
       toast.error(error.message);

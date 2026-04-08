@@ -12,6 +12,7 @@ export function useImportLegacyPurchase() {
       queryClient.invalidateQueries({ queryKey: ["installments-overview"] });
       queryClient.invalidateQueries({ queryKey: ["credit-cards"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
