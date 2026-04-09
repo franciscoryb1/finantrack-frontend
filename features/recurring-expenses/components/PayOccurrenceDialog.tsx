@@ -46,8 +46,16 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
   const [amount, setAmount] = useState<number | undefined>(
     occurrence.recurringExpense.amountCents / 100
   );
-  const [occurredAt, setOccurredAt] = useState<string>(
-    new Date().toISOString().split("T")[0]
+  const [occurredAt, setOccurredAt] = useState<string>(() =>
+    new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" })
+  );
+  const [occurredAtTime, setOccurredAtTime] = useState<string>(() =>
+    new Date().toLocaleTimeString("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
   );
   const [accountId, setAccountId] = useState<string>("");
   const [creditCardId, setCreditCardId] = useState<string>("");
@@ -98,8 +106,7 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
   async function submitPayment(updateEstimated: boolean) {
     setServerError(null);
     const amountCents = Math.round((amount ?? 0) * 100);
-    const [y, m, d] = occurredAt.split("-").map(Number);
-    const occurredAtIso = new Date(y, m - 1, d, 12, 0, 0).toISOString();
+    const occurredAtIso = `${occurredAt}T${occurredAtTime}:00-03:00`;
 
     try {
       await pay.mutateAsync({
@@ -250,13 +257,23 @@ export function PayOccurrenceDialog({ occurrence, trigger }: Props) {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="pay-date">Fecha de pago</Label>
-              <Input
-                id="pay-date"
-                type="date"
-                value={occurredAt}
-                onChange={(e) => setOccurredAt(e.target.value)}
-              />
+              <Label>Fecha de pago</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="pay-date"
+                  type="date"
+                  value={occurredAt}
+                  onChange={(e) => setOccurredAt(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  id="pay-time"
+                  type="time"
+                  value={occurredAtTime}
+                  onChange={(e) => setOccurredAtTime(e.target.value)}
+                  className="w-28"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 pt-1">

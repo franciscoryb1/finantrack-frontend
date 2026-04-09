@@ -6,6 +6,7 @@ const baseShape = {
   description: z.string().optional(),
   categoryId: z.number().optional(),
   occurredAt: z.string().min(1, "Seleccionar una fecha"),
+  occurredAtTime: z.string().regex(/^\d{2}:\d{2}$/, "Formato HH:MM"),
   paymentMethod: z.enum(["ACCOUNT", "CREDIT_CARD"]),
   tagIds: z.array(z.number()).optional(),
   // Campos condicionales según paymentMethod

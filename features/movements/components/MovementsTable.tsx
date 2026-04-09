@@ -117,13 +117,20 @@ type Props = {
 };
 
 function formatDate(iso: string) {
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("es-AR", {
+  const date = new Date(iso);
+  const dateStr = date.toLocaleDateString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "UTC",
   });
+  const timeStr = date.toLocaleTimeString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${dateStr} ${timeStr}`;
 }
 
 function getPaginationRange(current: number, total: number): (number | "…")[] {

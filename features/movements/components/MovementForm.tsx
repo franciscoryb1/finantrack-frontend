@@ -52,7 +52,14 @@ export function MovementForm({
   hidePaymentMethod = false,
   mode = "create",
 }: Props) {
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const currentTime = now.toLocaleTimeString("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
   const form = useForm<MovementFormValues>({
     resolver: zodResolver(buildMovementSchema(mode)),
     defaultValues: {
@@ -61,6 +68,7 @@ export function MovementForm({
       description: "",
       categoryId: undefined,
       occurredAt: today,
+      occurredAtTime: currentTime,
       paymentMethod: "ACCOUNT",
       tagIds: [],
       accountId: undefined,
@@ -147,7 +155,7 @@ export function MovementForm({
 
   return (
     <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-3">
 
         {/* ── Tipo (full width) ── */}
         <FormField
@@ -194,7 +202,7 @@ export function MovementForm({
         />
 
         {/* ── Cuerpo: grid 3 columnas en desktop ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3">
 
           {/* Monto hero — fila completa */}
           <div className="sm:col-span-3">
@@ -235,8 +243,8 @@ export function MovementForm({
             />
           </div>
 
-          {/* Fecha — col 1 */}
-          <div className="sm:col-span-1">
+          {/* Fila: Fecha + Hora */}
+          <div className="sm:col-span-3 grid grid-cols-2 gap-x-4">
             <FormField
               control={form.control}
               name="occurredAt"
@@ -250,57 +258,70 @@ export function MovementForm({
                 </FormItem>
               )}
             />
-          </div>
-
-          {/* Categoría — col 2 (1 col si hay subcat, 2 cols si no) */}
-          <div className={`min-w-0 ${subCategories.length > 0 ? "sm:col-span-1" : "sm:col-span-2"}`}>
             <FormField
               control={form.control}
-              name="categoryId"
+              name="occurredAtTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Categoría{" "}
-                    <span className="text-muted-foreground font-normal">(opcional)</span>
-                  </FormLabel>
-                  <Select
-                    onValueChange={(val) => {
-                      const id = Number(val);
-                      setParentCategoryId(id);
-                      field.onChange(id);
-                    }}
-                    value={parentCategoryId?.toString() ?? ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Sin categoría" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((c) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          <span className="flex items-center gap-1.5">
-                            {c.color && (
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: c.color }}
-                              />
-                            )}
-                            {c.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Hora</FormLabel>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
-          {/* Subcategoría — col 3, solo si existe */}
+          {/* Fila: Categoría + Subcategoría (si existe) */}
+          <div className="sm:col-span-3 flex gap-x-4">
+            <div className="flex-1 min-w-0">
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Categoría{" "}
+                      <span className="text-muted-foreground font-normal">(opcional)</span>
+                    </FormLabel>
+                    <Select
+                      onValueChange={(val) => {
+                        const id = Number(val);
+                        setParentCategoryId(id);
+                        field.onChange(id);
+                      }}
+                      value={parentCategoryId?.toString() ?? ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Sin categoría" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((c) => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            <span className="flex items-center gap-1.5">
+                              {c.color && (
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: c.color }}
+                                />
+                              )}
+                              {c.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
           {subCategories.length > 0 && (
-            <div className="sm:col-span-1 min-w-0">
+            <div className="flex-1 min-w-0">
               <FormItem>
                 <FormLabel>
                   Subcategoría{" "}
@@ -338,9 +359,10 @@ export function MovementForm({
               </FormItem>
             </div>
           )}
+          </div>
 
-          {/* Descripción — fila completa */}
-          <div className="sm:col-span-3">
+          {/* Descripción — 2 cols en desktop cuando tags visible, full si no */}
+          <div className={showTags ? "sm:col-span-2" : "sm:col-span-3"}>
             <FormField
               control={form.control}
               name="description"
@@ -359,9 +381,9 @@ export function MovementForm({
             />
           </div>
 
-          {/* Etiquetas — fila completa */}
-          <div className="sm:col-span-3">
-            {!showTags ? (
+          {/* Etiquetas — 1 col en desktop cuando visible, si no botón alineado al final */}
+          {!showTags ? (
+            <div className="sm:col-span-3">
               <button
                 type="button"
                 onClick={() => setShowTags(true)}
@@ -370,7 +392,9 @@ export function MovementForm({
                 <Tag className="h-3.5 w-3.5" />
                 Agregar etiquetas
               </button>
-            ) : (
+            </div>
+          ) : (
+            <div className="sm:col-span-1">
               <FormField
                 control={form.control}
                 name="tagIds"
@@ -387,8 +411,8 @@ export function MovementForm({
                   </FormItem>
                 )}
               />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Medio de pago — fila completa, solo EXPENSE y no edit */}
           {isExpense && !hidePaymentMethod && (

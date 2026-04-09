@@ -32,7 +32,14 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
 
   const initialCategoryId = item.category?.id;
 
-  const occurredAt = (item.purchaseDate ?? item.occurredAt).slice(0, 10);
+  const rawDate = new Date(item.purchaseDate ?? item.occurredAt);
+  const occurredAt = rawDate.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const occurredAtTime = rawDate.toLocaleTimeString("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
   const defaultValues: Partial<MovementFormValues> = {
     type: item.type as "INCOME" | "EXPENSE",
@@ -40,6 +47,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
     description: item.description ?? "",
     categoryId: initialCategoryId,
     occurredAt,
+    occurredAtTime,
     paymentMethod: "ACCOUNT",
     accountId: item.account?.id,
     tagIds: item.tags?.map((t) => t.id) ?? [],
@@ -51,8 +59,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
 
   async function handleSubmit(values: MovementFormValues) {
     setServerError(null);
-    const [y, m, d] = values.occurredAt.split("-").map(Number);
-    const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
+    const occurredAt = `${values.occurredAt}T${values.occurredAtTime}:00-03:00`;
 
     try {
       const sharedAmountCents = values.sharedAmount ? Math.round(values.sharedAmount * 100) : undefined;
@@ -89,12 +96,12 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
       onCancel={() => setConfirmDiscard(false)}
     />
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-md">
-        <DialogHeader className="px-5 pb-3.5 pt-5 border-b shrink-0">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] overflow-hidden w-[calc(100vw-2rem)] sm:w-auto sm:max-w-xl">
+        <DialogHeader className="px-5 sm:px-6 py-4 border-b shrink-0">
           <DialogTitle>Editar movimiento</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5">
           {serverError && (
             <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 mb-4">
               {serverError}
@@ -111,7 +118,7 @@ export function EditMovementDialog({ item, open, onOpenChange }: Props) {
           />
         </div>
 
-        <div className="shrink-0 px-5 pt-3 pb-4 border-t">
+        <div className="shrink-0 px-5 sm:px-6 py-4 border-t">
           <Button type="submit" form="edit-movement-form" className="w-full" disabled={updateMovement.isPending}>
             {updateMovement.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>

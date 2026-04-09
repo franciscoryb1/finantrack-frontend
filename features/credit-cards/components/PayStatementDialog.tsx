@@ -60,11 +60,20 @@ export function PayStatementDialog({
   periodYear,
   periodMonth,
 }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
   const defaultDescription = `Pago ${cardName} - ${MONTHS[periodMonth - 1]} ${periodYear}`;
 
   const [accountId, setAccountId] = useState("");
   const [paidAt, setPaidAt] = useState(today);
+  const [paidAtTime, setPaidAtTime] = useState(() =>
+    now.toLocaleTimeString("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+  );
   const [description, setDescription] = useState(defaultDescription);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -84,6 +93,14 @@ export function PayStatementDialog({
   function reset() {
     setAccountId("");
     setPaidAt(today);
+    setPaidAtTime(
+      new Date().toLocaleTimeString("en-CA", {
+        timeZone: "America/Argentina/Buenos_Aires",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    );
     setDescription(defaultDescription);
   }
 
@@ -95,7 +112,7 @@ export function PayStatementDialog({
       await payMutation.mutateAsync({
         statementId,
         accountId: Number(accountId),
-        paidAt: new Date(paidAt + "T12:00:00").toISOString(),
+        paidAt: `${paidAt}T${paidAtTime}:00-03:00`,
         description: description.trim() || undefined,
       });
       setConfirmOpen(false);
@@ -167,15 +184,25 @@ export function PayStatementDialog({
             )}
           </div>
 
-          {/* Fecha */}
+          {/* Fecha y hora */}
           <div className="space-y-1.5">
-            <Label htmlFor="paid-at">Fecha de pago</Label>
-            <Input
-              id="paid-at"
-              type="date"
-              value={paidAt}
-              onChange={(e) => setPaidAt(e.target.value)}
-            />
+            <Label>Fecha de pago</Label>
+            <div className="flex gap-2">
+              <Input
+                id="paid-at"
+                type="date"
+                value={paidAt}
+                onChange={(e) => setPaidAt(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                id="paid-at-time"
+                type="time"
+                value={paidAtTime}
+                onChange={(e) => setPaidAtTime(e.target.value)}
+                className="w-28"
+              />
+            </div>
           </div>
 
           {/* Descripción */}

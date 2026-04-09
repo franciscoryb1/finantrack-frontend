@@ -32,8 +32,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
 
   async function handleSubmit(values: MovementFormValues) {
     setServerError(null);
-    const [y, m, d] = values.occurredAt.split("-").map(Number);
-    const occurredAt = new Date(y, m - 1, d, 12, 0, 0).toISOString();
+    const occurredAt = `${values.occurredAt}T${values.occurredAtTime}:00-03:00`;
 
     try {
       const sharedAmountCents = values.sharedAmount ? Math.round(values.sharedAmount * 100) : undefined;
@@ -41,8 +40,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
       if (values.paymentMethod === "CREDIT_CARD") {
         let reimbursementAt: string | undefined;
         if (values.reimbursementEnabled && values.reimbursementAt) {
-          const [ry, rm, rd] = values.reimbursementAt.split("-").map(Number);
-          reimbursementAt = new Date(ry, rm - 1, rd, 12, 0, 0).toISOString();
+          reimbursementAt = `${values.reimbursementAt}T12:00:00-03:00`;
         }
         await createPurchase.mutateAsync({
           creditCardId: values.creditCardId!,
@@ -102,12 +100,12 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
         )}
       </DialogTrigger>
 
-      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] w-[calc(100vw-2rem)] sm:w-auto sm:max-w-lg">
-        <DialogHeader className="px-6 pb-4 border-b shrink-0">
+      <DialogContent className="p-0 gap-0 flex flex-col max-h-[90dvh] overflow-hidden w-[calc(100vw-2rem)] sm:w-auto sm:max-w-2xl">
+        <DialogHeader className="px-5 sm:px-6 py-4 border-b shrink-0">
           <DialogTitle>Nuevo movimiento</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5">
           {serverError && (
             <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 mb-4">
               {serverError}
@@ -121,7 +119,7 @@ export function CreateMovementDialog({ initialValues, label = "Nuevo movimiento"
           />
         </div>
 
-        <div className="shrink-0 px-6 pt-3 pb-5 border-t">
+        <div className="shrink-0 px-5 sm:px-6 py-4 border-t">
           <Button type="submit" form="create-movement-form" className="w-full" size="lg" disabled={createMovement.isPending || createPurchase.isPending}>
             {createMovement.isPending || createPurchase.isPending ? "Guardando..." : "Guardar movimiento"}
           </Button>
