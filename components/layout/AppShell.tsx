@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { usePendingPurchasesCount } from "@/features/pending-purchases/hooks/usePendingPurchasesCount";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -33,6 +34,7 @@ import {
   RefreshCcw,
   Sun,
   Moon,
+  Inbox,
 } from "lucide-react";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -42,12 +44,14 @@ type NavItemDef = {
   label: string;
   icon: React.ElementType;
   exact?: boolean;
+  badge?: number;
 };
 
 // ── Navegación ────────────────────────────────────────────────────────────────
 
 const MAIN_NAV: NavItemDef[] = [
   { href: "/",                   label: "Inicio",              icon: LayoutDashboard, exact: true },
+  { href: "/pendientes",         label: "Pendientes",          icon: Inbox },
   { href: "/movements",          label: "Movimientos",         icon: ArrowLeftRight },
   { href: "/accounts",           label: "Cuentas",             icon: Landmark },
   { href: "/recurring-expenses", label: "Gastos recurrentes",  icon: RefreshCcw },
@@ -65,6 +69,7 @@ function NavItem({
   label,
   icon: Icon,
   exact,
+  badge,
   onClick,
 }: NavItemDef & { onClick?: () => void }) {
   const pathname = usePathname();
@@ -83,6 +88,11 @@ function NavItem({
     >
       <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
       {label}
+      {badge && badge > 0 ? (
+        <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold leading-none">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -175,6 +185,8 @@ function UserSection({ onNavigate }: { onNavigate?: () => void }) {
 // ── Contenido del sidebar ─────────────────────────────────────────────────────
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { data: pendingCount } = usePendingPurchasesCount();
+
   return (
     <div className="flex flex-col h-full gap-1">
 
@@ -186,7 +198,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Nav principal */}
       <nav className="space-y-0.5">
         {MAIN_NAV.map((item) => (
-          <NavItem key={item.href} {...item} onClick={onNavigate} />
+          <NavItem
+            key={item.href}
+            {...item}
+            badge={item.href === "/pendientes" ? pendingCount : undefined}
+            onClick={onNavigate}
+          />
         ))}
       </nav>
 
